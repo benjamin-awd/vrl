@@ -1,5 +1,5 @@
 use crate::compiler::prelude::*;
-use rust_decimal::{Decimal, prelude::FromPrimitive};
+use rust_decimal::Decimal;
 use std::sync::LazyLock;
 
 static DEFAULT_DECIMAL_SEPARATOR: LazyLock<Value> =
@@ -39,7 +39,7 @@ fn format_number(
 ) -> Resolved {
     let value: Decimal = match value {
         Value::Integer(v) => v.into(),
-        Value::Float(v) => Decimal::from_f64(*v).expect("not NaN"),
+        Value::Float(v) => v.to_string().parse::<Decimal>().expect("not NaN"),
         value => {
             return Err(ValueError::Expected {
                 got: value.kind(),

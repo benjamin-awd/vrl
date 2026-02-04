@@ -166,9 +166,9 @@ impl VrlValueArithmetic for Value {
                 let rhv_i64 = rhs.try_into_i64().map_err(|_| err())?;
                 i64::wrapping_sub(lhv, rhv_i64).into()
             }
-            Value::Float(lhs) => {
-                let rhs = rhs.try_into_f64().map_err(|_| err())?;
-                safe_sub(*lhs, rhs).ok_or_else(err)?
+            Value::Float(lhv) => {
+                let rhv = rhs.try_into_f64().map_err(|_| err())?;
+                safe_sub(*lhv, rhv).ok_or_else(err)?
             }
             _ => return Err(err()),
         };
@@ -248,6 +248,7 @@ impl VrlValueArithmetic for Value {
             Value::Integer(lhv) if rhs.is_float() => (lhv as f64 > rhs.try_float()?).into(),
             Value::Integer(lhv) => (lhv > rhs.try_into_i64().map_err(|_| err())?).into(),
             Value::Float(lhv) => (lhv.into_inner() > rhs.try_into_f64().map_err(|_| err())?).into(),
+            Value::Decimal(lhv) => (lhv > rhs.try_into_decimal().map_err(|_| err())?).into(),
             Value::Bytes(lhv) => (lhv > rhs.try_bytes()?).into(),
             Value::Timestamp(lhv) => (lhv > rhs.try_timestamp()?).into(),
             _ => return Err(err()),
@@ -266,6 +267,7 @@ impl VrlValueArithmetic for Value {
             Value::Float(lhv) => {
                 (lhv.into_inner() >= rhs.try_into_f64().map_err(|_| err())?).into()
             }
+            Value::Decimal(lhv) => (lhv >= rhs.try_into_decimal().map_err(|_| err())?).into(),
             Value::Bytes(lhv) => (lhv >= rhs.try_bytes()?).into(),
             Value::Timestamp(lhv) => (lhv >= rhs.try_timestamp()?).into(),
             _ => return Err(err()),
@@ -282,6 +284,7 @@ impl VrlValueArithmetic for Value {
             Value::Integer(lhv) if rhs.is_float() => ((lhv as f64) < rhs.try_float()?).into(),
             Value::Integer(lhv) => (lhv < rhs.try_into_i64().map_err(|_| err())?).into(),
             Value::Float(lhv) => (lhv.into_inner() < rhs.try_into_f64().map_err(|_| err())?).into(),
+            Value::Decimal(lhv) => (lhv < rhs.try_into_decimal().map_err(|_| err())?).into(),
             Value::Bytes(lhv) => (lhv < rhs.try_bytes()?).into(),
             Value::Timestamp(lhv) => (lhv < rhs.try_timestamp()?).into(),
             _ => return Err(err()),
@@ -300,6 +303,7 @@ impl VrlValueArithmetic for Value {
             Value::Float(lhv) => {
                 (lhv.into_inner() <= rhs.try_into_f64().map_err(|_| err())?).into()
             }
+            Value::Decimal(lhv) => (lhv <= rhs.try_into_decimal().map_err(|_| err())?).into(),
             Value::Bytes(lhv) => (lhv <= rhs.try_bytes()?).into(),
             Value::Timestamp(lhv) => (lhv <= rhs.try_timestamp()?).into(),
             _ => return Err(err()),
@@ -327,19 +331,35 @@ impl VrlValueArithmetic for Value {
     /// Similar to [`std::cmp::Eq`], but does a lossless comparison for integers
     /// and floats.
     fn eq_lossy(&self, rhs: &Self) -> bool {
-        use Value::{Float, Integer};
+        use Value::{Decimal, Float, Integer};
 
-        match self {
-            Integer(lhv) => rhs
-                .try_into_f64()
-                .map(|rhv| *lhv as f64 == rhv)
+        match (self, rhs) {
+            // Decimal comparisons: convert other to Decimal
+            (Decimal(lhv), Decimal(rhv)) => lhv == rhv,
+            (Decimal(lhv), Integer(rhv)) => *lhv == rust_decimal::Decimal::from(*rhv),
+            (Integer(lhv), Decimal(rhv)) => rust_decimal::Decimal::from(*lhv) == *rhv,
+            (Decimal(lhv), Float(rhv)) => rhv
+                .into_inner()
+                .to_string()
+                .parse::<rust_decimal::Decimal>()
+                .map(|rhv_d| *lhv == rhv_d)
+                .unwrap_or(false),
+            (Float(lhv), Decimal(rhv)) => lhv
+                .into_inner()
+                .to_string()
+                .parse::<rust_decimal::Decimal>()
+                .map(|lhv_d| lhv_d == *rhv)
                 .unwrap_or(false),
 
-            Float(lhv) => rhs
-                .try_into_f64()
-                .map(|rhv| lhv.into_inner() == rhv)
-                .unwrap_or(false),
+            // Float comparisons: convert other to f64
+            (Integer(lhv), Float(rhv)) => (*lhv as f64) == rhv.into_inner(),
+            (Float(lhv), Integer(rhv)) => lhv.into_inner() == (*rhv as f64),
+            (Float(lhv), Float(rhv)) => lhv == rhv,
 
+            // Integer comparisons
+            (Integer(lhv), Integer(rhv)) => lhv == rhv,
+
+            // Non-numeric: derived PartialEq (exact type+value match)
             _ => self == rhs,
         }
     }

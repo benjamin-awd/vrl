@@ -1,6 +1,5 @@
-use crate::compiler::prelude::*;
-
 use super::util::round_to_precision;
+use crate::compiler::prelude::*;
 use std::sync::LazyLock;
 
 static DEFAULT_PRECISION: LazyLock<Value> = LazyLock::new(|| Value::Integer(0));
@@ -115,7 +114,8 @@ impl FunctionExpression for FloorFn {
 
     fn type_def(&self, state: &state::TypeState) -> TypeDef {
         match Kind::from(self.value.type_def(state)) {
-            v if v.is_float() || v.is_integer() => v.into(),
+            v if v.is_float() => v.into(),
+            v if v.is_integer() => v.into(),
             _ => Kind::integer().or_float().into(),
         }
     }

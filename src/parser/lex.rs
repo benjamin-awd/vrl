@@ -896,7 +896,6 @@ impl<'input> Lexer<'input> {
                         Err(_) => break,
                     }
                 }
-
                 '}' if braces == 0 => break,
                 '}' => braces -= 1,
 

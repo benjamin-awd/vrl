@@ -1,5 +1,4 @@
 use crate::compiler::prelude::*;
-
 fn abs(value: Value) -> Resolved {
     match value {
         Value::Float(f) => Ok(Value::from_f64_or_zero(f.abs())),
@@ -91,7 +90,8 @@ impl FunctionExpression for AbsFn {
 
     fn type_def(&self, state: &state::TypeState) -> TypeDef {
         match Kind::from(self.value.type_def(state)) {
-            v if v.is_float() || v.is_integer() => v.into(),
+            v if v.is_float() => v.into(),
+            v if v.is_integer() => v.into(),
             _ => Kind::integer().or_float().into(),
         }
     }

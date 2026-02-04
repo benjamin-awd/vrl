@@ -238,14 +238,16 @@ impl Expression for Op {
                 // ... <= ...
                 else {
                     lhs_def
-                        .fallible_unless(K::integer().or_float())
-                        .union(rhs_def.fallible_unless(K::integer().or_float()))
+                        .fallible_unless(K::integer().or_float().or_decimal())
+                        .union(rhs_def.fallible_unless(K::integer().or_float().or_decimal()))
                         .with_kind(K::boolean())
                 }
             }
 
             // ... / ...
             Div => {
+                let _rhs_def = self.rhs.apply_type_info(&mut state);
+
                 let td = TypeDef::float();
 
                 // Division is infallible if the rhs is a literal normal float or integer.
@@ -274,11 +276,9 @@ impl Expression for Op {
                     // ... + 1.0
                     // ... - 1.0
                     // ... * 1.0
-                    // ... % 1.0
                     // 1.0 + ...
                     // 1.0 - ...
                     // 1.0 * ...
-                    // 1.0 % ...
                     Add | Sub | Mul if lhs_def.is_float() || rhs_def.is_float() => lhs_def
                         .fallible_unless(K::integer().or_float())
                         .union(rhs_def.fallible_unless(K::integer().or_float()))

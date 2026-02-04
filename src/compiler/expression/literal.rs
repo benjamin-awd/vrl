@@ -6,6 +6,7 @@ use bytes::Bytes;
 use chrono::{DateTime, SecondsFormat, Utc};
 use ordered_float::NotNan;
 use regex::Regex;
+use rust_decimal::Decimal;
 
 use crate::compiler::{
     Context, Expression, Span, TypeDef,
@@ -18,6 +19,7 @@ pub enum Literal {
     String(Bytes),
     Integer(i64),
     Float(NotNan<f64>),
+    Decimal(Decimal),
     Boolean(bool),
     Regex(ValueRegex),
     Timestamp(DateTime<Utc>),
@@ -32,12 +34,13 @@ impl Literal {
     /// the case of `Literal` means it always returns `Some(Value)`, requiring
     /// an extra `unwrap()`.
     pub fn to_value(&self) -> Value {
-        use Literal::{Boolean, Float, Integer, Null, Regex, String, Timestamp};
+        use Literal::{Boolean, Decimal, Float, Integer, Null, Regex, String, Timestamp};
 
         match self {
             String(v) => Value::Bytes(v.clone()),
             Integer(v) => Value::Integer(*v),
             Float(v) => Value::Float(*v),
+            Decimal(v) => Value::Decimal(*v),
             Boolean(v) => Value::Boolean(*v),
             Regex(v) => Value::Regex(v.clone()),
             Timestamp(v) => Value::Timestamp(*v),
@@ -56,12 +59,13 @@ impl Expression for Literal {
     }
 
     fn type_info(&self, state: &TypeState) -> TypeInfo {
-        use Literal::{Boolean, Float, Integer, Null, Regex, String, Timestamp};
+        use Literal::{Boolean, Decimal, Float, Integer, Null, Regex, String, Timestamp};
 
         let type_def = match self {
             String(_) => TypeDef::bytes(),
             Integer(_) => TypeDef::integer(),
             Float(_) => TypeDef::float(),
+            Decimal(_) => TypeDef::decimal(),
             Boolean(_) => TypeDef::boolean(),
             Regex(_) => TypeDef::regex(),
             Timestamp(_) => TypeDef::timestamp(),
@@ -74,12 +78,13 @@ impl Expression for Literal {
 
 impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Literal::{Boolean, Float, Integer, Null, Regex, String, Timestamp};
+        use Literal::{Boolean, Decimal, Float, Integer, Null, Regex, String, Timestamp};
 
         match self {
             String(v) => write!(f, r#""{}""#, std::string::String::from_utf8_lossy(v)),
             Integer(v) => v.fmt(f),
             Float(v) => v.fmt(f),
+            Decimal(v) => write!(f, "d'{v}'"),
             Boolean(v) => v.fmt(f),
             Regex(v) => v.fmt(f),
             Timestamp(v) => write!(f, "t'{}'", v.to_rfc3339_opts(SecondsFormat::AutoSi, true)),
@@ -194,6 +199,14 @@ impl TryFrom<f64> for Literal {
             span: Span::default(),
             variant: ErrorVariant::NanFloat,
         })?))
+    }
+}
+
+// Literal::Decimal ------------------------------------------------------------
+
+impl From<Decimal> for Literal {
+    fn from(v: Decimal) -> Self {
+        Literal::Decimal(v)
     }
 }
 
@@ -315,7 +328,6 @@ impl DiagnosticMessage for Error {
                 format!("invalid timestamp format: {err}"),
                 self.span,
             )],
-
             NanFloat => vec![],
         }
     }

@@ -1,6 +1,5 @@
-use crate::compiler::prelude::*;
-
 use super::util::round_to_precision;
+use crate::compiler::prelude::*;
 use std::sync::LazyLock;
 
 static DEFAULT_PRECISION: LazyLock<Value> = LazyLock::new(|| Value::Integer(0));
@@ -116,7 +115,7 @@ impl FunctionExpression for RoundFn {
         round(precision, value)
     }
 
-    fn type_def(&self, _: &state::TypeState) -> TypeDef {
+    fn type_def(&self, _state: &state::TypeState) -> TypeDef {
         TypeDef::integer().infallible()
     }
 }

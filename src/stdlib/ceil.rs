@@ -8,7 +8,7 @@ static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
         Parameter::required(
             "value",
-            kind::FLOAT | kind::INTEGER,
+            kind::FLOAT | kind::INTEGER | kind::DECIMAL,
             "The number to round up.",
         ),
         Parameter::optional(
@@ -30,9 +30,10 @@ fn ceil(value: Value, precision: Value) -> Resolved {
             f64::ceil,
         ))),
         value @ Value::Integer(_) => Ok(value),
+        Value::Decimal(d) => Ok(Value::Decimal(d.ceil())),
         value => Err(ValueError::Expected {
             got: value.kind(),
-            expected: Kind::float() | Kind::integer(),
+            expected: Kind::float() | Kind::integer() | Kind::decimal(),
         }
         .into()),
     }
@@ -97,6 +98,11 @@ impl Function for Ceil {
                 source: "ceil(5)",
                 result: Ok("5"),
             },
+            example! {
+                title: "Round a decimal up",
+                source: "ceil(d'4.345')",
+                result: Ok("d'5'"),
+            },
         ]
     }
 }
@@ -119,8 +125,10 @@ impl FunctionExpression for CeilFn {
 
     fn type_def(&self, state: &state::TypeState) -> TypeDef {
         match Kind::from(self.value.type_def(state)) {
-            v if v.is_float() || v.is_integer() => v.into(),
-            _ => Kind::integer().or_float().into(),
+            v if v.is_float() => v.into(),
+            v if v.is_integer() => v.into(),
+            v if v.is_decimal() => v.into(),
+            _ => Kind::integer().or_float().or_decimal().into(),
         }
     }
 }
@@ -129,6 +137,7 @@ impl FunctionExpression for CeilFn {
 mod tests {
     use super::*;
     use crate::value;
+    use rust_decimal::dec;
 
     test_function![
         ceil => Ceil;
@@ -173,6 +182,18 @@ mod tests {
             ],
             want: Ok(value!(9_876_543_210_123_456_789_098_765_432_101_234_567_890_987_654_321.987_66)),
             tdef: TypeDef::float(),
+        }
+
+        decimal_lower {
+            args: func_args![value: Value::Decimal(dec!(1234.2))],
+            want: Ok(Value::Decimal(dec!(1235))),
+            tdef: TypeDef::decimal(),
+        }
+
+        decimal_higher {
+            args: func_args![value: Value::Decimal(dec!(1234.8))],
+            want: Ok(Value::Decimal(dec!(1235))),
+            tdef: TypeDef::decimal(),
         }
     ];
 }

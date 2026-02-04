@@ -1,13 +1,18 @@
 use crate::compiler::conversion::Conversion;
 use crate::compiler::prelude::*;
+use rust_decimal::prelude::ToPrimitive;
 
 fn to_int(value: Value) -> Resolved {
-    use Value::{Boolean, Bytes, Float, Integer, Null, Timestamp};
+    use Value::{Boolean, Bytes, Decimal, Float, Integer, Null, Timestamp};
 
     match value {
         Integer(_) => Ok(value),
         #[allow(clippy::cast_possible_truncation)] //TODO evaluate removal options
         Float(v) => Ok(Integer(v.into_inner() as i64)),
+        Decimal(v) => v.to_i64().map_or_else(
+            || Err("decimal value is out of range for integer".into()),
+            |i| Ok(Integer(i)),
+        ),
         Boolean(v) => Ok(Integer(i64::from(v))),
         Null => Ok(0.into()),
         Bytes(v) => Conversion::Integer
@@ -136,6 +141,7 @@ impl FunctionExpression for ToIntFn {
 
         TypeDef::integer().maybe_fallible(
             td.contains_bytes()
+                || td.contains_decimal()
                 || td.contains_array()
                 || td.contains_object()
                 || td.contains_regex(),
@@ -146,6 +152,7 @@ impl FunctionExpression for ToIntFn {
 #[cfg(test)]
 mod tests {
     use chrono::{DateTime, Utc};
+    use rust_decimal::dec;
 
     use super::*;
 
@@ -162,6 +169,12 @@ mod tests {
              args: func_args![value: 20.5],
              want: Ok(20),
              tdef: TypeDef::integer().infallible(),
+        }
+
+        decimal {
+             args: func_args![value: Value::Decimal(dec!(20.5))],
+             want: Ok(20),
+             tdef: TypeDef::integer().fallible(),
         }
 
         timezone {

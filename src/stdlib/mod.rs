@@ -4,7 +4,7 @@ pub use wasm_unsupported_function::WasmUnsupportedFunction;
 use crate::compiler::Function;
 
 mod ip_utils;
-mod json_utils;
+pub mod json_utils;
 mod string_utils;
 mod util;
 mod wasm_unsupported_function;
@@ -89,6 +89,7 @@ cfg_if::cfg_if! {
         mod ipv6_to_ipv4;
         mod is_array;
         mod is_boolean;
+        mod is_decimal;
         mod is_empty;
         mod is_float;
         mod is_integer;
@@ -152,6 +153,7 @@ cfg_if::cfg_if! {
         mod parse_url;
         mod parse_user_agent;
         mod parse_xml;
+        mod parse_numeric;
         mod pop;
         mod push;
         mod random_bool;
@@ -184,6 +186,7 @@ cfg_if::cfg_if! {
         mod tally_value;
         mod timestamp;
         mod to_bool;
+        mod to_decimal;
         mod to_float;
         mod to_int;
         mod to_regex;
@@ -317,6 +320,7 @@ cfg_if::cfg_if! {
             ipv6_to_ipv4::Ipv6ToIpV4,
             is_array::IsArray,
             is_boolean::IsBoolean,
+            is_decimal::IsDecimal,
             is_empty::IsEmpty,
             is_float::IsFloat,
             is_integer::IsInteger,
@@ -377,6 +381,7 @@ cfg_if::cfg_if! {
             parse_url::ParseUrl,
             parse_user_agent::ParseUserAgent,
             parse_xml::ParseXml,
+            parse_numeric::ParseNumeric,
             pop::Pop,
             push::Push,
             r#match::Match,
@@ -408,6 +413,7 @@ cfg_if::cfg_if! {
             tally_value::TallyValue,
             timestamp::Timestamp,
             to_bool::ToBool,
+            to_decimal::ToDecimal,
             to_float::ToFloat,
             to_int::ToInt,
             to_regex::ToRegex,

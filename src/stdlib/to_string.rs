@@ -1,12 +1,13 @@
 use crate::compiler::prelude::*;
 
 fn to_string(value: Value) -> Resolved {
-    use Value::{Boolean, Bytes, Float, Integer, Null, Timestamp};
+    use Value::{Boolean, Bytes, Decimal, Float, Integer, Null, Timestamp};
     use chrono::SecondsFormat;
     let value = match value {
         v @ Bytes(_) => v,
         Integer(v) => v.to_string().into(),
         Float(v) => v.to_string().into(),
+        Decimal(v) => v.to_string().into(),
         Boolean(v) => v.to_string().into(),
         Timestamp(v) => v.to_rfc3339_opts(SecondsFormat::AutoSi, true).into(),
         Null => "".into(),
@@ -131,6 +132,8 @@ impl FunctionExpression for ToStringFn {
 
 #[cfg(test)]
 mod tests {
+    use rust_decimal::dec;
+
     use super::*;
 
     test_function![
@@ -144,6 +147,12 @@ mod tests {
 
         float {
             args: func_args![value: 20.5],
+            want: Ok("20.5"),
+            tdef: TypeDef::bytes(),
+        }
+
+        decimal {
+            args: func_args![value: Value::Decimal(dec!(20.5))],
             want: Ok("20.5"),
             tdef: TypeDef::bytes(),
         }

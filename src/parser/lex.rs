@@ -304,6 +304,7 @@ impl<'input> Lexer<'input> {
                         continue;
                     }
 
+                    'd' if self.test_peek(|ch| ch == '\'') => Some(self.decimal_literal(start)),
                     'r' if self.test_peek(|ch| ch == '\'') => Some(self.regex_literal(start)),
                     's' if self.test_peek(|ch| ch == '\'') => Some(self.raw_string_literal(start)),
                     't' if self.test_peek(|ch| ch == '\'') => Some(self.timestamp_literal(start)),
@@ -347,6 +348,7 @@ pub enum Token<S> {
     RawStringLiteral(RawStringLiteralToken<S>),
     IntegerLiteral(i64),
     FloatLiteral(NotNan<f64>),
+    DecimalLiteral(S),
     RegexLiteral(S),
     TimestampLiteral(S),
 
@@ -424,10 +426,10 @@ pub enum Token<S> {
 impl<S> Token<S> {
     pub(crate) fn map<R>(self, f: impl Fn(S) -> R) -> Token<R> {
         use self::Token::{
-            Abort, Ampersand, Arrow, Bang, Colon, Comma, Dot, Else, Equals, Escape, False,
-            FloatLiteral, FunctionCall, Identifier, If, IntegerLiteral, InvalidToken, LBrace,
-            LBracket, LParen, LQuery, MergeEquals, Newline, Null, Operator, PathField, Percent,
-            Question, RBrace, RBracket, RParen, RQuery, RawStringLiteral, RegexLiteral,
+            Abort, Ampersand, Arrow, Bang, Colon, Comma, DecimalLiteral, Dot, Else, Equals, Escape,
+            False, FloatLiteral, FunctionCall, Identifier, If, IntegerLiteral, InvalidToken,
+            LBrace, LBracket, LParen, LQuery, MergeEquals, Newline, Null, Operator, PathField,
+            Percent, Question, RBrace, RBracket, RParen, RQuery, RawStringLiteral, RegexLiteral,
             ReservedIdentifier, Return, SemiColon, StringLiteral, TimestampLiteral, True,
             Underscore,
         };
@@ -445,6 +447,7 @@ impl<S> Token<S> {
 
             IntegerLiteral(s) => IntegerLiteral(s),
             FloatLiteral(s) => FloatLiteral(s),
+            DecimalLiteral(s) => DecimalLiteral(f(s)),
             RegexLiteral(s) => RegexLiteral(f(s)),
             TimestampLiteral(s) => TimestampLiteral(f(s)),
 
@@ -495,10 +498,10 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Token::{
-            Abort, Ampersand, Arrow, Bang, Colon, Comma, Dot, Else, Equals, Escape, False,
-            FloatLiteral, FunctionCall, Identifier, If, IntegerLiteral, InvalidToken, LBrace,
-            LBracket, LParen, LQuery, MergeEquals, Newline, Null, Operator, PathField, Percent,
-            Question, RBrace, RBracket, RParen, RQuery, RawStringLiteral, RegexLiteral,
+            Abort, Ampersand, Arrow, Bang, Colon, Comma, DecimalLiteral, Dot, Else, Equals, Escape,
+            False, FloatLiteral, FunctionCall, Identifier, If, IntegerLiteral, InvalidToken,
+            LBrace, LBracket, LParen, LQuery, MergeEquals, Newline, Null, Operator, PathField,
+            Percent, Question, RBrace, RBracket, RParen, RQuery, RawStringLiteral, RegexLiteral,
             ReservedIdentifier, Return, SemiColon, StringLiteral, TimestampLiteral, True,
             Underscore,
         };
@@ -512,6 +515,7 @@ where
             RawStringLiteral(_) => "RawStringLiteral",
             IntegerLiteral(_) => "IntegerLiteral",
             FloatLiteral(_) => "FloatLiteral",
+            DecimalLiteral(_) => "DecimalLiteral",
             RegexLiteral(_) => "RegexLiteral",
             TimestampLiteral(_) => "TimestampLiteral",
             ReservedIdentifier(_) => "ReservedIdentifier",
@@ -852,6 +856,13 @@ impl<'input> Lexer<'input> {
                         Err(_) => break,
                     }
                 }
+                'd' if chars.peek().map(|(_, ch)| ch) == Some(&'\'') => {
+                    let result = Lexer::new(&self.input[pos + 1..]).decimal_literal(0);
+                    match take_until_end(result, &mut last_char, &mut end, &mut chars) {
+                        Ok(()) => continue,
+                        Err(_) => break,
+                    }
+                }
 
                 '}' if braces == 0 => break,
                 '}' => braces -= 1,
@@ -953,6 +964,18 @@ impl<'input> Lexer<'input> {
                                     Err(()) => {
                                         return Err(Error::UnexpectedParseError(
                                             "Expected characters at end of timestamp literal."
+                                                .to_string(),
+                                        ));
+                                    }
+                                }
+                            }
+                            s if s.starts_with("d'") => {
+                                let r = Lexer::new(&self.input[pos + 1..]).decimal_literal(0)?;
+                                match literal_check(r, &mut chars) {
+                                    Ok(ch) => ch,
+                                    Err(()) => {
+                                        return Err(Error::UnexpectedParseError(
+                                            "Expected characters at end of decimal literal."
                                                 .to_string(),
                                         ));
                                     }
@@ -1063,6 +1086,10 @@ impl<'input> Lexer<'input> {
 
     fn timestamp_literal(&mut self, start: usize) -> SpannedResult<'input, usize> {
         self.quoted_literal(start, Token::TimestampLiteral)
+    }
+
+    fn decimal_literal(&mut self, start: usize) -> SpannedResult<'input, usize> {
+        self.quoted_literal(start, Token::DecimalLiteral)
     }
 
     fn numeric_literal_or_identifier(&mut self, start: usize) -> SpannedResult<'input, usize> {

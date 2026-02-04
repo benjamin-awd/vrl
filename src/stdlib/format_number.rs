@@ -10,10 +10,11 @@ fn format_number(
     let value: Decimal = match value {
         Value::Integer(v) => v.into(),
         Value::Float(v) => Decimal::from_f64(*v).expect("not NaN"),
+        Value::Decimal(v) => v,
         value => {
             return Err(ValueError::Expected {
                 got: value.kind(),
-                expected: Kind::integer() | Kind::float(),
+                expected: Kind::integer() | Kind::float() | Kind::decimal(),
             }
             .into());
         }
@@ -98,7 +99,7 @@ impl Function for FormatNumber {
         &[
             Parameter {
                 keyword: "value",
-                kind: kind::INTEGER | kind::FLOAT,
+                kind: kind::INTEGER | kind::FLOAT | kind::DECIMAL,
                 required: true,
                 description: "The number to format as a string.",
             },
@@ -198,12 +199,19 @@ impl FunctionExpression for FormatNumberFn {
 mod tests {
     use super::*;
     use crate::value;
+    use rust_decimal::dec;
 
     test_function![
         format_number => FormatNumber;
 
         number {
             args: func_args![value: 1234.567],
+            want: Ok(value!("1234.567")),
+            tdef: TypeDef::bytes().infallible(),
+        }
+
+        decimal {
+            args: func_args![value: Value::Decimal(dec!(1234.567))],
             want: Ok(value!("1234.567")),
             tdef: TypeDef::bytes().infallible(),
         }

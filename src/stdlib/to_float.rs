@@ -1,5 +1,6 @@
 use crate::compiler::conversion::Conversion;
 use crate::compiler::prelude::*;
+use rust_decimal::prelude::ToPrimitive;
 
 pub(crate) fn bytes_to_float(bytes: Bytes) -> Resolved {
     Conversion::Float
@@ -9,10 +10,14 @@ pub(crate) fn bytes_to_float(bytes: Bytes) -> Resolved {
 
 #[allow(clippy::cast_precision_loss)] //TODO evaluate removal options
 fn to_float(value: Value) -> Resolved {
-    use Value::{Boolean, Bytes, Float, Integer, Null, Timestamp};
+    use Value::{Boolean, Bytes, Decimal, Float, Integer, Null, Timestamp};
     match value {
         Float(_) => Ok(value),
         Integer(v) => Ok(Value::from_f64_or_zero(v as f64)),
+        Decimal(v) => v.to_f64().map_or_else(
+            || Err("decimal value is out of range for float".into()),
+            |f| Ok(Value::from_f64_or_zero(f)),
+        ),
         Boolean(v) => Ok(NotNan::new(if v { 1.0 } else { 0.0 }).unwrap().into()),
         Null => Ok(NotNan::new(0.0).unwrap().into()),
         Timestamp(v) => {
@@ -147,6 +152,7 @@ impl FunctionExpression for ToFloatFn {
 
         TypeDef::float().maybe_fallible(
             td.contains_bytes()
+                || td.contains_decimal()
                 || td.contains_array()
                 || td.contains_object()
                 || td.contains_regex(),
@@ -157,6 +163,7 @@ impl FunctionExpression for ToFloatFn {
 #[cfg(test)]
 mod tests {
     use chrono::prelude::*;
+    use rust_decimal::dec;
 
     use super::*;
 
@@ -173,6 +180,12 @@ mod tests {
             args: func_args![value: 20],
             want: Ok(20.0),
             tdef: TypeDef::float().infallible(),
+        }
+
+        decimal {
+            args: func_args![value: Value::Decimal(dec!(20.5))],
+            want: Ok(20.5),
+            tdef: TypeDef::float().fallible(),
         }
 
         timestamp {

@@ -1,6 +1,5 @@
-use crate::compiler::prelude::*;
-
 use super::util::round_to_precision;
+use crate::compiler::prelude::*;
 
 fn round(precision: Value, value: Value) -> Resolved {
     let precision = precision.try_integer()?;
@@ -11,9 +10,10 @@ fn round(precision: Value, value: Value) -> Resolved {
             f64::round,
         ))),
         value @ Value::Integer(_) => Ok(value),
+        Value::Decimal(d) => Ok(Value::Decimal(d.round())),
         value => Err(ValueError::Expected {
             got: value.kind(),
-            expected: Kind::float() | Kind::integer(),
+            expected: Kind::float() | Kind::integer() | Kind::decimal(),
         }
         .into()),
     }
@@ -35,7 +35,7 @@ impl Function for Round {
         &[
             Parameter {
                 keyword: "value",
-                kind: kind::INTEGER | kind::FLOAT,
+                kind: kind::INTEGER | kind::FLOAT | kind::DECIMAL,
                 required: true,
                 description: "The number to round.",
             },
@@ -70,6 +70,11 @@ impl Function for Round {
                 source: "round(5.45)",
                 result: Ok("5.0"),
             },
+            example! {
+                title: "Round a decimal",
+                source: "round(d'4.5')",
+                result: Ok("d'5'"),
+            },
         ]
     }
 
@@ -100,14 +105,21 @@ impl FunctionExpression for RoundFn {
         round(precision, value)
     }
 
-    fn type_def(&self, _: &state::TypeState) -> TypeDef {
-        TypeDef::integer().infallible()
+    fn type_def(&self, state: &state::TypeState) -> TypeDef {
+        // Decimals preserve their type when rounded
+        match Kind::from(self.value.type_def(state)) {
+            v if v.is_float() => TypeDef::integer().infallible(),
+            v if v.is_integer() => TypeDef::integer().infallible(),
+            v if v.is_decimal() => TypeDef::decimal().infallible(),
+            _ => TypeDef::integer().or_decimal().infallible(),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_decimal::dec;
 
     test_function![
         round => Round;
@@ -153,5 +165,17 @@ mod tests {
              want: Ok(9_876_543_210_123_456_789_098_765_432_101_234_567_890_987_654_321.987_65),
              tdef: TypeDef::integer().infallible(),
          }
+
+        decimal_down {
+            args: func_args![value: Value::Decimal(dec!(1234.2))],
+            want: Ok(Value::Decimal(dec!(1234))),
+            tdef: TypeDef::decimal().infallible(),
+        }
+
+        decimal_up {
+            args: func_args![value: Value::Decimal(dec!(1234.6))],
+            want: Ok(Value::Decimal(dec!(1235))),
+            tdef: TypeDef::decimal().infallible(),
+        }
     ];
 }

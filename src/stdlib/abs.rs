@@ -1,12 +1,12 @@
 use crate::compiler::prelude::*;
-
 fn abs(value: Value) -> Resolved {
     match value {
         Value::Float(f) => Ok(Value::from_f64_or_zero(f.abs())),
         Value::Integer(i) => Ok(Value::from(i.abs())),
+        Value::Decimal(d) => Ok(Value::Decimal(d.abs())),
         value => Err(ValueError::Expected {
             got: value.kind(),
-            expected: Kind::float() | Kind::integer(),
+            expected: Kind::float() | Kind::integer() | Kind::decimal(),
         }
         .into()),
     }
@@ -27,7 +27,7 @@ impl Function for Abs {
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
-            kind: kind::FLOAT | kind::INTEGER,
+            kind: kind::FLOAT | kind::INTEGER | kind::DECIMAL,
             required: true,
             description: "The number to calculate the absolute value.",
         }]
@@ -57,6 +57,11 @@ impl Function for Abs {
                 result: Ok("42.2"),
             },
             example! {
+                title: "Computes the absolute value of a decimal",
+                source: "abs(d'-42.2')",
+                result: Ok("d'42.2'"),
+            },
+            example! {
                 title: "Computes the absolute value of a positive integer",
                 source: "abs(10)",
                 result: Ok("10"),
@@ -79,8 +84,10 @@ impl FunctionExpression for AbsFn {
 
     fn type_def(&self, state: &state::TypeState) -> TypeDef {
         match Kind::from(self.value.type_def(state)) {
-            v if v.is_float() || v.is_integer() => v.into(),
-            _ => Kind::integer().or_float().into(),
+            v if v.is_float() => v.into(),
+            v if v.is_integer() => v.into(),
+            v if v.is_decimal() => v.into(),
+            _ => Kind::integer().or_float().or_decimal().into(),
         }
     }
 }
@@ -89,6 +96,7 @@ impl FunctionExpression for AbsFn {
 mod tests {
     use super::*;
     use crate::value;
+    use rust_decimal::dec;
 
     test_function![
         abs => Abs;
@@ -115,6 +123,18 @@ mod tests {
             args: func_args![value: value!(42.2)],
             want: Ok(value!(42.2)),
             tdef: TypeDef::float(),
+        }
+
+        decimal_negative {
+            args: func_args![value: Value::Decimal(dec!(-42.2))],
+            want: Ok(Value::Decimal(dec!(42.2))),
+            tdef: TypeDef::decimal(),
+        }
+
+        decimal_positive {
+            args: func_args![value: Value::Decimal(dec!(42.2))],
+            want: Ok(Value::Decimal(dec!(42.2))),
+            tdef: TypeDef::decimal(),
         }
     ];
 }

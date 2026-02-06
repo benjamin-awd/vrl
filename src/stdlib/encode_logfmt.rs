@@ -1,6 +1,26 @@
 use crate::compiler::prelude::*;
+use std::sync::LazyLock;
 
-use super::encode_key_value::EncodeKeyValueFn;
+use super::encode_key_value::{DEFAULT_FIELDS_ORDERING, EncodeKeyValueFn};
+
+static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
+    vec![
+        Parameter {
+            keyword: "value",
+            kind: kind::OBJECT,
+            required: true,
+            description: "The value to convert to a logfmt string.",
+            default: None,
+        },
+        Parameter {
+            keyword: "fields_ordering",
+            kind: kind::ARRAY,
+            required: false,
+            description: "The ordering of fields to preserve. Any fields not in this list are listed unordered, after all ordered fields.",
+            default: Some(&DEFAULT_FIELDS_ORDERING),
+        },
+    ]
+});
 
 #[derive(Clone, Copy, Debug)]
 pub struct EncodeLogfmt;
@@ -15,20 +35,7 @@ impl Function for EncodeLogfmt {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "value",
-                kind: kind::OBJECT,
-                required: true,
-                description: "The value to convert to a logfmt string.",
-            },
-            Parameter {
-                keyword: "fields_ordering",
-                kind: kind::ARRAY,
-                required: false,
-                description: "The ordering of fields to preserve. Any fields not in this list are listed unordered, after all ordered fields.",
-            },
-        ]
+        PARAMETERS.as_slice()
     }
 
     fn compile(
@@ -39,9 +46,9 @@ impl Function for EncodeLogfmt {
     ) -> Compiled {
         // The encode_logfmt function is just an alias for `encode_key_value` with the following
         // parameters for the delimiters.
-        let key_value_delimiter = expr!("=");
-        let field_delimiter = expr!(" ");
-        let flatten_boolean = expr!(true);
+        let key_value_delimiter = Some(expr!("="));
+        let field_delimiter = Some(expr!(" "));
+        let flatten_boolean = Some(expr!(true));
 
         let value = arguments.required("value");
         let fields = arguments.optional("fields_ordering");

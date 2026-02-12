@@ -43,6 +43,13 @@ impl Function for IpPton {
         kind::BYTES
     }
 
+    fn notices(&self) -> &'static [&'static str] {
+        &[indoc! {"
+            The binary data from this function is not easily printable. However, functions such as
+            `encode_base64` or `encode_percent` can still process it correctly.
+        "}]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",

@@ -85,6 +85,13 @@ impl Function for ParseCef {
         kind::OBJECT
     }
 
+    fn notices(&self) -> &'static [&'static str] {
+        &[indoc! {"
+            All values are returned as strings. We recommend manually coercing values to desired
+            types as you see fit.
+        "}]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         PARAMETERS.as_slice()
     }

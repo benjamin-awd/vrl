@@ -48,6 +48,14 @@ impl Function for ParseLinuxAuthorization {
         kind::OBJECT
     }
 
+    fn notices(&self) -> &'static [&'static str] {
+        &[indoc! {"
+            The function resolves the year for messages that don't include it. If the current month
+            is January, and the message is for December, it will take the previous year. Otherwise,
+            take the current year.
+        "}]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",

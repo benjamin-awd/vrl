@@ -41,6 +41,10 @@ impl Function for ParseCbor {
             | kind::NULL
     }
 
+    fn notices(&self) -> &'static [&'static str] {
+        &["Only CBOR types are returned."]
+    }
+
     fn examples(&self) -> &'static [Example] {
         &[
             example! {

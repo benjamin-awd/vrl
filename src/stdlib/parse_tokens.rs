@@ -40,6 +40,13 @@ impl Function for ParseTokens {
         kind::ARRAY
     }
 
+    fn notices(&self) -> &'static [&'static str] {
+        &[indoc! {"
+            All token values are returned as strings. We recommend manually coercing values to
+            desired types as you see fit.
+        "}]
+    }
+
     fn examples(&self) -> &'static [Example] {
         &[example! {
             title: "Parse tokens",

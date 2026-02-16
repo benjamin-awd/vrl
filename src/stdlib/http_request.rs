@@ -174,11 +174,7 @@ mod non_wasm {
             );
         }
 
-        if proxies.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(proxies))
-        }
+        Ok((!proxies.is_empty()).then_some(proxies))
     }
 
     #[derive(Debug, Clone)]

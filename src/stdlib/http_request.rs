@@ -87,11 +87,20 @@ mod non_wasm {
         method: &Value,
         headers: Value,
         body: &Value,
+        redact_headers: bool,
     ) -> Resolved {
         let url = url.try_bytes_utf8_lossy()?;
         let method = method.try_bytes_utf8_lossy()?.to_uppercase();
         let headers = headers.try_object()?;
         let body = body.try_bytes_utf8_lossy()?;
+
+        let format_headers = |headers: &ObjectMap| -> Value {
+            if redact_headers {
+                Value::Object(redact_sensitive_headers(headers))
+            } else {
+                Value::Object(headers.clone())
+            }
+        };
 
         let method = Method::try_from(method.as_str())
             .map_err(|_| format!("Unsupported HTTP method: {method}"))?;
@@ -107,14 +116,14 @@ mod non_wasm {
                     format!(
                         "Invalid header value for key '{key}': {} (headers: {})",
                         e,
-                        Value::Object(redact_sensitive_headers(&headers))
+                        format_headers(&headers)
                     )
                 })?
                 .parse::<HeaderValue>()
                 .map_err(|_| {
                     format!(
                         "Invalid header value for key '{key}' (headers: {})",
-                        Value::Object(redact_sensitive_headers(&headers))
+                        format_headers(&headers)
                     )
                 })?;
             header_map.insert(key, val);
@@ -132,7 +141,7 @@ mod non_wasm {
                     e,
                     url,
                     method,
-                    Value::Object(redact_sensitive_headers(&headers))
+                    format_headers(&headers)
                 )
             })?;
 
@@ -268,6 +277,7 @@ mod non_wasm {
         pub(super) headers: Box<dyn Expression>,
         pub(super) body: Box<dyn Expression>,
         pub(super) client_or_proxies: ClientOrProxies,
+        pub(super) redact_headers: Box<dyn Expression>,
     }
 
     impl FunctionExpression for HttpRequestFn {
@@ -278,6 +288,7 @@ mod non_wasm {
             let headers = self.headers.resolve(ctx)?;
             let body = self.body.resolve(ctx)?;
             let client = self.client_or_proxies.get_client(ctx)?;
+            let redact_headers = self.redact_headers.resolve(ctx)?.try_boolean()?;
 
             // block_in_place runs the HTTP request synchronously
             // without blocking Tokio's async worker threads.
@@ -285,7 +296,7 @@ mod non_wasm {
             task::block_in_place(|| {
                 if let Ok(handle) = Handle::try_current() {
                     handle.block_on(async {
-                        http_request(&client, &url, &method, headers, &body).await
+                        http_request(&client, &url, &method, headers, &body, redact_headers).await
                     })
                 } else {
                     let runtime = runtime::Builder::new_current_thread()
@@ -294,7 +305,7 @@ mod non_wasm {
                         .expect("tokio runtime creation failed");
 
                     runtime.block_on(async move {
-                        http_request(&client, &url, &method, headers, &body).await
+                        http_request(&client, &url, &method, headers, &body, redact_headers).await
                     })
                 }
             })
@@ -383,6 +394,11 @@ impl Function for HttpRequest {
                 kind: kind::BYTES,
                 required: false,
             },
+            Parameter {
+                keyword: "redact_headers",
+                kind: kind::BOOLEAN,
+                required: false,
+            },
         ]
     }
 
@@ -400,6 +416,9 @@ impl Function for HttpRequest {
         let body = arguments.optional("body").unwrap_or_else(|| expr!(""));
         let http_proxy = arguments.optional("http_proxy");
         let https_proxy = arguments.optional("https_proxy");
+        let redact_headers = arguments
+            .optional("redact_headers")
+            .unwrap_or_else(|| expr!(true));
 
         let client_or_proxies = ClientOrProxies::new(state, http_proxy, https_proxy)
             .map_err(|err| Box::new(err) as Box<dyn DiagnosticMessage>)?;
@@ -410,6 +429,7 @@ impl Function for HttpRequest {
             headers,
             body,
             client_or_proxies,
+            redact_headers,
         }
         .as_expr())
     }
@@ -453,6 +473,7 @@ mod tests {
             headers: expr!({}),
             body: expr!(""),
             client_or_proxies: ClientOrProxies::no_proxies(),
+            redact_headers: expr!(true),
         };
 
         let result = execute_http_request(&func).expect("HTTP request failed");
@@ -475,6 +496,7 @@ mod tests {
             headers: expr!({}),
             body: expr!(""),
             client_or_proxies: ClientOrProxies::no_proxies(),
+            redact_headers: expr!(true),
         };
 
         let result = execute_http_request(&func);
@@ -491,6 +513,7 @@ mod tests {
             headers: expr!({"Invalid Header With Spaces": "value"}),
             body: expr!(""),
             client_or_proxies: ClientOrProxies::no_proxies(),
+            redact_headers: expr!(true),
         };
 
         let result = execute_http_request(&func);
@@ -510,6 +533,7 @@ mod tests {
                 None,
                 Some(expr!("not^a&valid*url")),
             ),
+            redact_headers: expr!(true),
         };
 
         let result = execute_http_request(&func);
@@ -533,6 +557,7 @@ mod tests {
             }),
             body: expr!(""),
             client_or_proxies: ClientOrProxies::no_proxies(),
+            redact_headers: expr!(true),
         };
 
         let result = execute_http_request(&func);
@@ -562,6 +587,31 @@ mod tests {
         assert!(
             error.contains("VRL/0.28"),
             "User-Agent should not be redacted"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_redact_headers_disabled() {
+        let func = HttpRequestFn {
+            url: expr!("not-a-valid-url"),
+            method: expr!("get"),
+            headers: expr!({
+                "Authorization": "Bearer super_secret_12345",
+                "Content-Type": "application/json"
+            }),
+            body: expr!(""),
+            client_or_proxies: ClientOrProxies::no_proxies(),
+            redact_headers: expr!(false),
+        };
+
+        let result = execute_http_request(&func);
+        assert!(result.is_err());
+        let error = result.unwrap_err().to_string();
+
+        // With redaction disabled, sensitive values should be visible
+        assert!(
+            error.contains("super_secret_12345"),
+            "Authorization token should not be redacted when redact_headers is false"
         );
     }
 }

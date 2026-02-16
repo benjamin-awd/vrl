@@ -8,6 +8,7 @@
 use crate::compiler::prelude::*;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::similar_names)]
 mod non_wasm {
     use super::{
         Context, Expression, ExpressionError, FunctionExpression, Resolved, TypeDef, TypeState,
@@ -153,7 +154,6 @@ mod non_wasm {
         Ok(body.into())
     }
 
-    #[allow(clippy::similar_names)]
     fn make_proxies(
         http_proxy: Option<Value>,
         https_proxy: Option<Value>,
@@ -187,7 +187,6 @@ mod non_wasm {
     }
 
     impl ClientOrProxies {
-        #[allow(clippy::similar_names)]
         pub(super) fn new(
             state: &TypeState,
             http_proxy: Option<Box<dyn Expression>>,
@@ -227,7 +226,6 @@ mod non_wasm {
             }
         }
 
-        #[allow(clippy::similar_names)]
         pub fn new_proxies_no_const_resolve(
             http_proxy: Option<Box<dyn Expression>>,
             https_proxy: Option<Box<dyn Expression>>,
@@ -238,7 +236,6 @@ mod non_wasm {
             }
         }
 
-        #[allow(clippy::similar_names)]
         fn get_client(&self, ctx: &mut Context) -> Result<ClientWithMiddleware, ExpressionError> {
             match self {
                 Self::Client(client) => Ok(client.clone()),
@@ -277,7 +274,6 @@ mod non_wasm {
     }
 
     impl FunctionExpression for HttpRequestFn {
-        #[allow(clippy::similar_names)]
         fn resolve(&self, ctx: &mut Context) -> Resolved {
             let url = self.url.resolve(ctx)?;
             let method = self.method.resolve(ctx)?;

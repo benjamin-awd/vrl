@@ -455,7 +455,6 @@ impl Function for HttpRequest {
 mod tests {
     use super::*;
     use crate::value;
-    use tokio;
 
     fn execute_http_request(http_request_fn: &HttpRequestFn) -> Resolved {
         let tz = TimeZone::default();

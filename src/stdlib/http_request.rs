@@ -93,8 +93,6 @@ mod non_wasm {
         let headers = headers.try_object()?;
         let body = body.try_bytes_utf8_lossy()?;
 
-        let redacted_headers = redact_sensitive_headers(&headers);
-
         let method = Method::try_from(method.as_str())
             .map_err(|_| format!("Unsupported HTTP method: {method}"))?;
         let mut header_map = HeaderMap::new();
@@ -109,14 +107,14 @@ mod non_wasm {
                     format!(
                         "Invalid header value for key '{key}': {} (headers: {})",
                         e,
-                        Value::Object(redacted_headers.clone())
+                        Value::Object(redact_sensitive_headers(&headers))
                     )
                 })?
                 .parse::<HeaderValue>()
                 .map_err(|_| {
                     format!(
                         "Invalid header value for key '{key}' (headers: {})",
-                        Value::Object(redacted_headers.clone())
+                        Value::Object(redact_sensitive_headers(&headers))
                     )
                 })?;
             header_map.insert(key, val);
@@ -134,7 +132,7 @@ mod non_wasm {
                     e,
                     url,
                     method,
-                    Value::Object(redacted_headers.clone())
+                    Value::Object(redact_sensitive_headers(&headers))
                 )
             })?;
 

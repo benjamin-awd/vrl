@@ -1,6 +1,6 @@
 use crate::compiler::prelude::*;
 
-use crate::stdlib::casing::into_case;
+use crate::stdlib::casing::{ORIGINAL_CASE, into_case};
 use convert_case::Case;
 
 #[derive(Clone, Copy, Debug)]
@@ -24,7 +24,7 @@ impl Function for Pascalcase {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
+        const PARAMETERS: &[Parameter] = &[
             Parameter {
                 keyword: "value",
                 kind: kind::BYTES,
@@ -33,15 +33,10 @@ impl Function for Pascalcase {
                 default: None,
                 enum_variants: None,
             },
-            Parameter {
-                keyword: "original_case",
-                kind: kind::BYTES,
-                required: false,
-                description: "Optional hint on the original case type. Must be one of: kebab-case, camelCase, PascalCase, SCREAMING_SNAKE, snake_case",
-                default: None,
-                enum_variants: None,
-            },
-        ]
+            ORIGINAL_CASE,
+        ];
+
+        PARAMETERS
     }
 
     fn compile(

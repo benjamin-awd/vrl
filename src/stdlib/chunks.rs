@@ -27,30 +27,61 @@ impl Function for Chunks {
         "chunks"
     }
 
+    fn usage(&self) -> &'static str {
+        "Chunks `value` into slices of length `chunk_size` bytes."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Array.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &[
+            "`chunk_size` must be at least 1 byte.",
+            "`chunk_size` is too large.",
+        ]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::ARRAY
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "`chunks` is considered fallible if the supplied `chunk_size` is an expression, and infallible if it's a literal integer.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[
             Parameter {
                 keyword: "value",
                 kind: kind::BYTES,
                 required: true,
+                description: "The array of bytes to split.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "chunk_size",
                 kind: kind::INTEGER,
                 required: true,
+                description: "The desired length of each chunk in bytes. This may be constrained by the host platform architecture.",
+                default: None,
+                enum_variants: None,
             },
         ]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "chunks by byte",
+            example! {
+                title: "Split a string into chunks",
                 source: r#"chunks("abcdefgh", 4)"#,
                 result: Ok(r#"["abcd", "efgh"]"#),
             },
-            Example {
-                title: "chunk sizes do not respect unicode code point boundaries",
+            example! {
+                title: "Chunks do not respect unicode code point boundaries",
                 source: r#"chunks("ab你好", 4)"#,
                 result: Ok(r#"["ab�","�好"]"#),
             },

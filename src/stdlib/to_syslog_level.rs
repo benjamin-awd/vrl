@@ -25,22 +25,43 @@ impl Function for ToSyslogLevel {
         "to_syslog_level"
     }
 
+    fn usage(&self) -> &'static str {
+        r#"Converts the `value`, a Syslog [severity level](https://en.wikipedia.org/wiki/Syslog#Severity_level), into its corresponding keyword, i.e. 0 into `"emerg"`, 1 into `"alert"`, etc."#
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Convert.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &[
+            "`value` isn't a valid Syslog [severity level](https://en.wikipedia.org/wiki/Syslog#Severity_level).",
+        ]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::INTEGER,
             required: true,
+            description: "The severity level.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "valid",
-                source: "to_syslog_level!(0)",
-                result: Ok("emerg"),
+            example! {
+                title: "Coerce to a Syslog level",
+                source: "to_syslog_level!(5)",
+                result: Ok("notice"),
             },
-            Example {
+            example! {
                 title: "invalid",
                 source: "to_syslog_level!(500)",
                 result: Err(

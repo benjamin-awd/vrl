@@ -14,30 +14,53 @@ impl Function for Includes {
         "includes"
     }
 
+    fn usage(&self) -> &'static str {
+        "Determines whether the `value` array includes the specified `item`."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Enumerate.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[
             Parameter {
                 keyword: "value",
                 kind: kind::ARRAY,
                 required: true,
+                description: "The array.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "item",
                 kind: kind::ANY,
                 required: true,
+                description: "The item to check.",
+                default: None,
+                enum_variants: None,
             },
         ]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "includes",
+            example! {
+                title: "Array includes",
+                source: r#"includes(["apple", "orange", "banana"], "banana")"#,
+                result: Ok("true"),
+            },
+            example! {
+                title: "Includes boolean",
                 source: "includes([1, true], true)",
                 result: Ok("true"),
             },
-            Example {
-                title: "no includes",
+            example! {
+                title: "Doesn't include",
                 source: r#"includes(["foo", "bar"], "baz")"#,
                 result: Ok("false"),
             },

@@ -25,22 +25,54 @@ impl Function for IpNtop {
         "ip_ntop"
     }
 
+    fn usage(&self) -> &'static str {
+        indoc! {"
+            Converts IPv4 and IPv6 addresses from binary to text form.
+
+            This behavior mimics [inet_ntop](https://linux.die.net/man/3/inet_ntop).
+        "}
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Ip.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`value` must be of length 4 or 16 bytes."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
+    fn notices(&self) -> &'static [&'static str] {
+        &[indoc! {"
+            The binary data for this function is not easily printable. However, the results from
+            functions such as `decode_base64` or `decode_percent` can still be used correctly.
+        "}]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::BYTES,
             required: true,
+            description: "The binary data to convert from.
+For IPv4 addresses, it must be 4 bytes (32 bits) long.
+For IPv6 addresses, it must be 16 bytes (128 bits) long.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
+            example! {
                 title: "Convert IPv4 address from bytes after decoding from Base64",
                 source: r#"ip_ntop!(decode_base64!("wKgAAQ=="))"#,
                 result: Ok("192.168.0.1"),
             },
-            Example {
+            example! {
                 title: "Convert IPv6 address from bytes after decoding from Base64",
                 source: r#"ip_ntop!(decode_base64!("IAENuIWjAAAAAIouA3BzNA=="))"#,
                 result: Ok("2001:db8:85a3::8a2e:370:7334"),

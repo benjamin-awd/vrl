@@ -27,34 +27,56 @@ impl Function for ParseCbor {
         "}
     }
 
+    fn category(&self) -> &'static str {
+        Category::Parse.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`value` is not a valid CBOR-formatted payload."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+            | kind::INTEGER
+            | kind::FLOAT
+            | kind::BYTES
+            | kind::OBJECT
+            | kind::ARRAY
+            | kind::NULL
+    }
+
+    fn notices(&self) -> &'static [&'static str] {
+        &["Only CBOR types are returned."]
+    }
+
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "object",
+            example! {
+                title: "Parse CBOR",
                 source: r#"parse_cbor!(decode_base64!("oWVmaWVsZGV2YWx1ZQ=="))"#,
                 result: Ok(r#"{ "field": "value" }"#),
             },
-            Example {
+            example! {
                 title: "array",
                 source: r#"parse_cbor!(decode_base64!("gvUA"))"#,
                 result: Ok("[true, 0]"),
             },
-            Example {
+            example! {
                 title: "string",
                 source: r#"parse_cbor!(decode_base64!("ZWhlbGxv"))"#,
                 result: Ok("hello"),
             },
-            Example {
+            example! {
                 title: "integer",
                 source: r#"parse_cbor!(decode_base64!("GCo="))"#,
                 result: Ok("42"),
             },
-            Example {
+            example! {
                 title: "float",
                 source: r#"parse_cbor!(decode_base64!("+0BFEKPXCj1x"))"#,
                 result: Ok("42.13"),
             },
-            Example {
+            example! {
                 title: "boolean",
                 source: r#"parse_cbor!(decode_base64!("9A=="))"#,
                 result: Ok("false"),
@@ -77,6 +99,9 @@ impl Function for ParseCbor {
             keyword: "value",
             kind: kind::BYTES,
             required: true,
+            description: "The CBOR payload to parse.",
+            default: None,
+            enum_variants: None,
         }]
     }
 }

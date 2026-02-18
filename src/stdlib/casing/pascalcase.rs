@@ -1,6 +1,6 @@
 use crate::compiler::prelude::*;
 
-use crate::stdlib::casing::into_case;
+use crate::stdlib::casing::{ORIGINAL_CASE, into_case};
 use convert_case::Case;
 
 #[derive(Clone, Copy, Debug)]
@@ -11,19 +11,32 @@ impl Function for Pascalcase {
         "pascalcase"
     }
 
+    fn usage(&self) -> &'static str {
+        "Takes the `value` string, and turns it into PascalCase. Optionally, you can pass in the existing case of the function, or else we will try to figure out the case automatically."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::String.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
-        &[
+        const PARAMETERS: &[Parameter] = &[
             Parameter {
                 keyword: "value",
                 kind: kind::BYTES,
                 required: true,
+                description: "The string to convert to PascalCase.",
+                default: None,
+                enum_variants: None,
             },
-            Parameter {
-                keyword: "original_case",
-                kind: kind::BYTES,
-                required: false,
-            },
-        ]
+            ORIGINAL_CASE,
+        ];
+
+        PARAMETERS
     }
 
     fn compile(
@@ -52,11 +65,23 @@ impl Function for Pascalcase {
     }
 
     fn examples(&self) -> &'static [Example] {
-        &[Example {
-            title: "pascalcase",
-            source: r#"pascalcase("input_string")"#,
-            result: Ok("InputString"),
-        }]
+        &[
+            example! {
+                title: "PascalCase a string without specifying original case",
+                source: r#"pascalcase("input-string")"#,
+                result: Ok("InputString"),
+            },
+            example! {
+                title: "PascalCase a snake_case string",
+                source: r#"pascalcase("foo_bar_baz", "snake_case")"#,
+                result: Ok("FooBarBaz"),
+            },
+            example! {
+                title: "PascalCase specifying the wrong original case (only capitalizes)",
+                source: r#"pascalcase("foo_bar_baz", "kebab-case")"#,
+                result: Ok("Foo_bar_baz"),
+            },
+        ]
     }
 }
 

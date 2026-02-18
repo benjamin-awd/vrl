@@ -1,3 +1,4 @@
+use crate::compiler::function::EnumVariant;
 use crate::compiler::prelude::*;
 use crate::value;
 use core::convert::AsRef;
@@ -5,6 +6,92 @@ use parse_size::Config;
 use rust_decimal::{Decimal, prelude::FromPrimitive, prelude::ToPrimitive};
 use std::collections::HashMap;
 use std::sync::LazyLock;
+
+static DEFAULT_BASE: LazyLock<Value> = LazyLock::new(|| Value::Bytes(Bytes::from("2")));
+
+static UNIT_ENUM: &[EnumVariant] = &[
+    EnumVariant {
+        value: "B",
+        description: "Bytes",
+    },
+    EnumVariant {
+        value: "kiB",
+        description: "Kilobytes (1024 bytes)",
+    },
+    EnumVariant {
+        value: "MiB",
+        description: "Megabytes (1024 ** 2 bytes)",
+    },
+    EnumVariant {
+        value: "GiB",
+        description: "Gigabytes (1024 ** 3 bytes)",
+    },
+    EnumVariant {
+        value: "TiB",
+        description: "Terabytes (1024 gigabytes)",
+    },
+    EnumVariant {
+        value: "PiB",
+        description: "Petabytes (1024 ** 2 gigabytes)",
+    },
+    EnumVariant {
+        value: "EiB",
+        description: "Exabytes (1024 ** 3 gigabytes)",
+    },
+    EnumVariant {
+        value: "kB",
+        description: "Kilobytes (1 thousand bytes in SI)",
+    },
+    EnumVariant {
+        value: "MB",
+        description: "Megabytes (1 million bytes in SI)",
+    },
+    EnumVariant {
+        value: "GB",
+        description: "Gigabytes (1 billion bytes in SI)",
+    },
+    EnumVariant {
+        value: "TB",
+        description: "Terabytes (1 thousand gigabytes in SI)",
+    },
+    EnumVariant {
+        value: "PB",
+        description: "Petabytes (1 million gigabytes in SI)",
+    },
+    EnumVariant {
+        value: "EB",
+        description: "Exabytes (1 billion gigabytes in SI)",
+    },
+];
+
+static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
+    vec![
+        Parameter {
+            keyword: "value",
+            kind: kind::BYTES,
+            required: true,
+            description: "The string of the duration with either binary or SI unit.",
+            default: None,
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "unit",
+            kind: kind::BYTES,
+            required: true,
+            description: "The output units for the byte.",
+            default: None,
+            enum_variants: Some(UNIT_ENUM),
+        },
+        Parameter {
+            keyword: "base",
+            kind: kind::BYTES,
+            required: false,
+            description: "The base for the byte, either 2 or 10.",
+            default: Some(&DEFAULT_BASE),
+            enum_variants: None,
+        },
+    ]
+});
 
 fn parse_bytes(bytes: &Value, unit: Value, base: &Bytes) -> Resolved {
     let (units, parse_config) = match base.as_ref() {
@@ -26,7 +113,9 @@ fn parse_bytes(bytes: &Value, unit: Value, base: &Bytes) -> Resolved {
         .parse_size(value)
         .map_err(|e| format!("unable to parse bytes: '{e}'"))?;
     let value = Decimal::from_u64(value).ok_or(format!("unable to parse number: {value}"))?;
-    let number = value / conversion_factor;
+    let number = value
+        .checked_div(*conversion_factor)
+        .ok_or("division by >1 divisor overflowed")?; // This should never ever happen
     let number = number
         .to_f64()
         .ok_or(format!("unable to parse number: '{number}'"))?;
@@ -84,20 +173,51 @@ impl Function for ParseBytes {
         "parse_bytes"
     }
 
+    fn usage(&self) -> &'static str {
+        "Parses the `value` into a human-readable bytes format specified by `unit` and `base`."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Parse.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`value` is not a properly formatted bytes."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::FLOAT
+    }
+
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "kilobytes in default binary units",
+            example! {
+                title: "Parse bytes (kilobytes)",
+                source: r#"parse_bytes!("1024KiB", unit: "MiB")"#,
+                result: Ok("1.0"),
+            },
+            example! {
+                title: "Parse kilobytes in default binary units",
                 source: r#"parse_bytes!("1KiB", unit: "B")"#,
                 result: Ok("1024.0"),
             },
-            Example {
-                title: "gigabytes in decimal units",
+            example! {
+                title: "Parse bytes in SI unit (terabytes)",
+                source: r#"parse_bytes!("4TB", unit: "MB", base: "10")"#,
+                result: Ok("4000000.0"),
+            },
+            example! {
+                title: "Parse gigabytes in decimal units",
                 source: r#"parse_bytes!("1GB", unit: "B", base: "10")"#,
                 result: Ok("1000000000.0"),
             },
-            Example {
-                title: "gigabytes in ambiguous decimal units",
+            example! {
+                title: "Parse bytes in ambiguous unit (gigabytes)",
+                source: r#"parse_bytes!("1GB", unit: "B", base: "2")"#,
+                result: Ok("1073741824.0"),
+            },
+            example! {
+                title: "Parse gigabytes in ambiguous decimal units",
                 source: r#"parse_bytes!("1GB", unit: "MB", base: "2")"#,
                 result: Ok("1024.0"),
             },
@@ -114,7 +234,7 @@ impl Function for ParseBytes {
         let unit = arguments.required("unit");
         let base = arguments
             .optional_enum("base", &base_sets(), state)?
-            .unwrap_or_else(|| value!("2"))
+            .unwrap_or_else(|| DEFAULT_BASE.clone())
             .try_bytes()
             .expect("base not bytes");
 
@@ -122,23 +242,7 @@ impl Function for ParseBytes {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "value",
-                kind: kind::BYTES,
-                required: true,
-            },
-            Parameter {
-                keyword: "unit",
-                kind: kind::BYTES,
-                required: true,
-            },
-            Parameter {
-                keyword: "base",
-                kind: kind::BYTES,
-                required: false,
-            },
-        ]
+        PARAMETERS.as_slice()
     }
 }
 

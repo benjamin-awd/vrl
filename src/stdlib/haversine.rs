@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
+use crate::compiler::function::EnumVariant;
 use crate::compiler::prelude::*;
 use crate::value;
 
@@ -8,6 +10,8 @@ use super::util::round_to_precision;
 const EARTH_RADIUS_IN_METERS: f64 = 6_371_008.8;
 const EARTH_RADIUS_IN_KILOMETERS: f64 = EARTH_RADIUS_IN_METERS / 1000.0;
 const EARTH_RADIUS_IN_MILES: f64 = EARTH_RADIUS_IN_KILOMETERS * 0.621_371_2;
+
+static DEFAULT_MEASUREMENT_UNIT: LazyLock<Value> = LazyLock::new(|| value!("kilometers"));
 
 fn haversine_distance(
     latitude1: Value,
@@ -77,32 +81,68 @@ impl Function for Haversine {
         "haversine"
     }
 
+    fn usage(&self) -> &'static str {
+        "Calculates [haversine](https://en.wikipedia.org/wiki/Haversine_formula) distance and bearing between two points."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Map.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::OBJECT
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[
             Parameter {
                 keyword: "latitude1",
                 kind: kind::FLOAT,
                 required: true,
+                description: "Latitude of the first point.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "longitude1",
                 kind: kind::FLOAT,
                 required: true,
+                description: "Longitude of the first point.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "latitude2",
                 kind: kind::FLOAT,
                 required: true,
+                description: "Latitude of the second point.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "longitude2",
                 kind: kind::FLOAT,
                 required: true,
+                description: "Longitude of the second point.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "measurement_unit",
                 kind: kind::BYTES,
                 required: false,
+                description: "Measurement system to use for resulting distance.",
+                default: None,
+                enum_variants: Some(&[
+                    EnumVariant {
+                        value: "kilometers",
+                        description: "Use kilometers for the resulting distance.",
+                    },
+                    EnumVariant {
+                        value: "miles",
+                        description: "Use miles for the resulting distance.",
+                    },
+                ]),
             },
         ]
     }
@@ -120,7 +160,7 @@ impl Function for Haversine {
 
         let measurement_unit = match arguments
             .optional_enum("measurement_unit", &measurement_systems(), state)?
-            .unwrap_or_else(|| value!("kilometers"))
+            .unwrap_or_else(|| DEFAULT_MEASUREMENT_UNIT.clone())
             .try_bytes()
             .ok()
             .as_deref()
@@ -142,8 +182,8 @@ impl Function for Haversine {
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "haversine",
+            example! {
+                title: "Haversine in kilometers",
                 source: "haversine(0.0, 0.0, 10.0, 10.0)",
                 result: Ok(indoc!(
                     r#"{
@@ -152,8 +192,8 @@ impl Function for Haversine {
                     }"#
                 )),
             },
-            Example {
-                title: "haversine in miles",
+            example! {
+                title: "Haversine in miles",
                 source: r#"haversine(0.0, 0.0, 10.0, 10.0, measurement_unit: "miles")"#,
                 result: Ok(indoc!(
                     r#"{

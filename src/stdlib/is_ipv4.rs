@@ -14,29 +14,57 @@ impl Function for IsIpv4 {
         "is_ipv4"
     }
 
+    fn usage(&self) -> &'static str {
+        indoc! {"
+            Check if the string is a valid IPv4 address or not.
+
+            An [IPv4-mapped](https://datatracker.ietf.org/doc/html/rfc6890) or
+            [IPv4-compatible](https://datatracker.ietf.org/doc/html/rfc6890) IPv6 address is not considered
+            valid for the purpose of this function.
+        "}
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Ip.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "Returns `true` if `value` is a valid IPv4 address.",
+            "Returns `false` if `value` is anything else.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::BYTES,
             required: true,
+            description: "The IP address to check",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "random string",
-                source: r#"is_ipv4("foobar")"#,
-                result: Ok("false"),
-            },
-            Example {
-                title: "IPv4 address",
-                source: r#"is_ipv4("1.1.1.1")"#,
+            example! {
+                title: "Valid IPv4 address",
+                source: r#"is_ipv4("10.0.102.37")"#,
                 result: Ok("true"),
             },
-            Example {
-                title: "IPv6 address",
+            example! {
+                title: "Valid IPv6 address",
                 source: r#"is_ipv4("2001:0db8:85a3:0000:0000:8a2e:0370:7334")"#,
+                result: Ok("false"),
+            },
+            example! {
+                title: "Arbitrary string",
+                source: r#"is_ipv4("foobar")"#,
                 result: Ok("false"),
             },
         ]

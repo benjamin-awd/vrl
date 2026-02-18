@@ -14,18 +14,18 @@ impl Function for EncodeCharset {
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "Encode charset to euc-kr",
+            example! {
+                title: "Encode UTF8 string to EUC-KR",
                 source: r#"encode_base64(encode_charset!("안녕하세요", "euc-kr"))"#,
                 result: Ok("vsiz58fPvLy/5A=="),
             },
-            Example {
-                title: "Encode charset to euc-jp",
+            example! {
+                title: "Encode UTF8 string to EUC-JP",
                 source: r#"encode_base64(encode_charset!("こんにちは", "euc-jp"))"#,
                 result: Ok(r"pLOk86TLpMGkzw=="),
             },
-            Example {
-                title: "Encode charset to gb2312",
+            example! {
+                title: "Encode UTF8 string to GB2312",
                 source: r#"encode_base64(encode_charset!("你好", "gb2312"))"#,
                 result: Ok(r"xOO6ww=="),
             },
@@ -45,17 +45,37 @@ impl Function for EncodeCharset {
         "}
     }
 
+    fn category(&self) -> &'static str {
+        Category::Codec.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &[
+            "`to_charset` isn't a valid [character set](https://encoding.spec.whatwg.org/#names-and-labels).",
+        ]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[
             Parameter {
                 keyword: "value",
                 kind: kind::BYTES,
                 required: true,
+                description: "The UTF8 string to encode.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "to_charset",
                 kind: kind::BYTES,
                 required: true,
+                description: "The [character set](https://encoding.spec.whatwg.org/#names-and-labels) to use when encoding the data.",
+                default: None,
+                enum_variants: None,
             },
         ]
     }

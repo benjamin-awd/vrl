@@ -13,7 +13,7 @@ fn type_def(type_def: &VrlTypeDef) -> Value {
 /// A debug function to print the type definition of an expression at runtime.
 ///
 /// This function is *UNDOCUMENTED* and *UNSTABLE*. It is *NOT* to be advertised
-/// to users of Vector, even though it is technically useable by others.
+/// to users of Vector, even though it is technically usable by others.
 #[derive(Clone, Copy, Debug)]
 pub struct TypeDef;
 
@@ -22,16 +22,35 @@ impl Function for TypeDef {
         "type_def"
     }
 
+    fn usage(&self) -> &'static str {
+        indoc! {"
+            Returns the type definition of an expression at runtime.
+
+            This is a debug function that is *UNSTABLE*. Behavior is *NOT* guaranteed even though it is technically usable.
+        "}
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Type.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::ANY
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The expression to get the type definition for.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
-        &[Example {
+        &[example! {
             title: "return type definition",
             source: "type_def(42)",
             result: Ok(r#"{ "integer": true }"#),

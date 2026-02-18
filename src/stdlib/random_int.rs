@@ -31,24 +31,46 @@ impl Function for RandomInt {
         "random_int"
     }
 
+    fn usage(&self) -> &'static str {
+        "Returns a random integer between [min, max)."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Random.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`max` is not greater than `min`."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::INTEGER
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[
             Parameter {
                 keyword: "min",
                 kind: kind::INTEGER,
                 required: true,
+                description: "Minimum value (inclusive).",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "max",
                 kind: kind::INTEGER,
                 required: true,
+                description: "Maximum value (exclusive).",
+                default: None,
+                enum_variants: None,
             },
         ]
     }
 
     fn examples(&self) -> &'static [Example] {
-        &[Example {
-            title: "generate a random int from 0 to 10",
+        &[example! {
+            title: "Random integer from 0 to 10, not including 10",
             source: "
 				i = random_int(0, 10)
 				i >= 0 && i < 10

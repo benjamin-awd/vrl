@@ -19,24 +19,36 @@ impl Function for MatchDatadogQuery {
         "match_datadog_query"
     }
 
+    fn usage(&self) -> &'static str {
+        "Matches an object against a [Datadog Search Syntax](https://docs.datadoghq.com/logs/explorer/search_syntax/) query."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Object.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
+            example! {
                 title: "OR query",
                 source: r#"match_datadog_query({"message": "contains this and that"}, "this OR that")"#,
                 result: Ok("true"),
             },
-            Example {
+            example! {
                 title: "AND query",
                 source: r#"match_datadog_query({"message": "contains only this"}, "this AND that")"#,
                 result: Ok("false"),
             },
-            Example {
-                title: "Facet wildcard",
-                source: r#"match_datadog_query({"name": "vector"}, "@name:vec*")"#,
+            example! {
+                title: "Attribute wildcard",
+                source: r#"match_datadog_query({"name": "foobar"}, "@name:foo*")"#,
                 result: Ok("true"),
             },
-            Example {
+            example! {
                 title: "Tag range",
                 source: r#"match_datadog_query({"tags": ["a:x", "b:y", "c:z"]}, s'b:["x" TO "z"]')"#,
                 result: Ok("true"),
@@ -83,11 +95,17 @@ impl Function for MatchDatadogQuery {
                 keyword: "value",
                 kind: kind::OBJECT,
                 required: true,
+                description: "The object.",
+                default: None,
+                enum_variants: None,
             },
             Parameter {
                 keyword: "query",
                 kind: kind::BYTES,
                 required: true,
+                description: "The Datadog Search Syntax query.",
+                default: None,
+                enum_variants: None,
             },
         ]
     }

@@ -23,67 +23,95 @@ impl Function for ToString {
         "to_string"
     }
 
+    fn usage(&self) -> &'static str {
+        "Coerces the `value` into a string."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Coerce.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`value` is not an integer, float, boolean, string, timestamp, or null."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "If `value` is an integer or float, returns the string representation.",
+            "If `value` is a boolean, returns `\"true\"` or `\"false\"`.",
+            "If `value` is a timestamp, returns an [RFC 3339](\\(urls.rfc3339)) representation.",
+            "If `value` is a null, returns `\"\"`.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The value to convert to a string.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "string",
-                source: "to_string(s'foo')",
-                result: Ok("foo"),
-            },
-            Example {
-                title: "integer",
-                source: "to_string(5)",
-                result: Ok("s'5'"),
-            },
-            Example {
-                title: "float",
-                source: "to_string(5.6)",
-                result: Ok("s'5.6'"),
-            },
-            Example {
-                title: "true",
+            example! {
+                title: "Coerce to a string (Boolean)",
                 source: "to_string(true)",
                 result: Ok("s'true'"),
             },
-            Example {
-                title: "false",
+            example! {
+                title: "Coerce to a string (int)",
+                source: "to_string(52)",
+                result: Ok("s'52'"),
+            },
+            example! {
+                title: "Coerce to a string (float)",
+                source: "to_string(52.2)",
+                result: Ok("s'52.2'"),
+            },
+            example! {
+                title: "String",
+                source: "to_string(s'foo')",
+                result: Ok("foo"),
+            },
+            example! {
+                title: "False",
                 source: "to_string(false)",
                 result: Ok("s'false'"),
             },
-            Example {
-                title: "null",
+            example! {
+                title: "Null",
                 source: "to_string(null)",
                 result: Ok(""),
             },
-            Example {
-                title: "timestamp",
+            example! {
+                title: "Timestamp",
                 source: "to_string(t'2020-01-01T00:00:00Z')",
                 result: Ok("2020-01-01T00:00:00Z"),
             },
-            Example {
-                title: "array",
+            example! {
+                title: "Array",
                 source: "to_string!([])",
                 result: Err(
                     r#"function call error for "to_string" at (0:14): unable to coerce array into string"#,
                 ),
             },
-            Example {
-                title: "object",
+            example! {
+                title: "Object",
                 source: "to_string!({})",
                 result: Err(
                     r#"function call error for "to_string" at (0:14): unable to coerce object into string"#,
                 ),
             },
-            Example {
-                title: "regex",
+            example! {
+                title: "Regex",
                 source: "to_string!(r'foo')",
                 result: Err(
                     r#"function call error for "to_string" at (0:18): unable to coerce regex into string"#,

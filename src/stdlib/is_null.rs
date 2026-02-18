@@ -9,30 +9,52 @@ impl Function for IsNull {
         "is_null"
     }
 
+    fn usage(&self) -> &'static str {
+        "Check if `value`'s type is `null`. For a more relaxed function, see [`is_nullish`](/docs/reference/vrl/functions#is_nullish)."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Type.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "Returns `true` if `value` is null.",
+            "Returns `false` if `value` is anything else.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The value to check if it is `null`.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "array",
-                source: "is_null([1, 2, 3])",
-                result: Ok("false"),
-            },
-            Example {
-                title: "string",
-                source: r#"is_null("foobar")"#,
-                result: Ok("false"),
-            },
-            Example {
-                title: "null",
+            example! {
+                title: "Null value",
                 source: "is_null(null)",
                 result: Ok("true"),
+            },
+            example! {
+                title: "Non-matching type",
+                source: r#"is_null("a string")"#,
+                result: Ok("false"),
+            },
+            example! {
+                title: "Array",
+                source: "is_null([1, 2, 3])",
+                result: Ok("false"),
             },
         ]
     }

@@ -19,6 +19,8 @@ pub struct Test {
     pub check_diagnostics: bool,
     // paths set to read-only
     pub read_only_paths: Vec<(OwnedTargetPath, bool)>,
+    pub source_file: String,
+    pub source_line: u32,
 }
 
 enum CaptureMode {
@@ -124,8 +126,6 @@ impl Test {
             })
         };
 
-        // See https://github.com/rust-lang/rust-clippy/pull/12756
-        #[allow(clippy::assigning_clones)]
         {
             result = result.trim_end().to_owned();
         }
@@ -141,6 +141,8 @@ impl Test {
             skip: content.starts_with("# SKIP"),
             check_diagnostics: content.starts_with("# DIAGNOSTICS"),
             read_only_paths,
+            source_file: path.to_string_lossy().to_string(),
+            source_line: 1,
         }
     }
 
@@ -162,6 +164,8 @@ impl Test {
             skip: false,
             check_diagnostics: false,
             read_only_paths: vec![],
+            source_file: example.file.to_owned(),
+            source_line: example.line,
         }
     }
 }

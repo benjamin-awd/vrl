@@ -9,28 +9,50 @@ impl Function for IsBoolean {
         "is_boolean"
     }
 
+    fn usage(&self) -> &'static str {
+        "Check if the `value`'s type is a boolean."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Type.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "Returns `true` if `value` is a boolean.",
+            "Returns `false` if `value` is anything else.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The value to check if it is a Boolean.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "string",
-                source: r#"is_boolean("foobar")"#,
-                result: Ok("false"),
-            },
-            Example {
-                title: "boolean",
+            example! {
+                title: "Valid boolean",
                 source: "is_boolean(false)",
                 result: Ok("true"),
             },
-            Example {
-                title: "null",
+            example! {
+                title: "Non-matching type",
+                source: r#"is_boolean("a string")"#,
+                result: Ok("false"),
+            },
+            example! {
+                title: "Null",
                 source: "is_boolean(null)",
                 result: Ok("false"),
             },

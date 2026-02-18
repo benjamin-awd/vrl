@@ -1,45 +1,91 @@
 use super::util;
 use crate::compiler::prelude::*;
+use std::sync::LazyLock;
+
+static DEFAULT_RECURSIVE: LazyLock<Value> = LazyLock::new(|| Value::Boolean(true));
+static DEFAULT_NULL: LazyLock<Value> = LazyLock::new(|| Value::Boolean(true));
+static DEFAULT_STRING: LazyLock<Value> = LazyLock::new(|| Value::Boolean(true));
+static DEFAULT_OBJECT: LazyLock<Value> = LazyLock::new(|| Value::Boolean(true));
+static DEFAULT_ARRAY: LazyLock<Value> = LazyLock::new(|| Value::Boolean(true));
+static DEFAULT_NULLISH: LazyLock<Value> = LazyLock::new(|| Value::Boolean(false));
+
+static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
+    vec![
+        Parameter {
+            keyword: "value",
+            kind: kind::OBJECT | kind::ARRAY,
+            required: true,
+            description: "The object or array to compact.",
+            default: None,
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "recursive",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Whether the compaction be recursive.",
+            default: Some(&DEFAULT_RECURSIVE),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "null",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Whether null should be treated as an empty value.",
+            default: Some(&DEFAULT_NULL),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "string",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Whether an empty string should be treated as an empty value.",
+            default: Some(&DEFAULT_STRING),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "object",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Whether an empty object should be treated as an empty value.",
+            default: Some(&DEFAULT_OBJECT),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "array",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Whether an empty array should be treated as an empty value.",
+            default: Some(&DEFAULT_ARRAY),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "nullish",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Tests whether the value is \"nullish\" as defined by the [`is_nullish`](#is_nullish) function.",
+            default: Some(&DEFAULT_NULLISH),
+            enum_variants: None,
+        },
+    ]
+});
 
 fn compact(
-    recursive: Option<Value>,
-    null: Option<Value>,
-    string: Option<Value>,
-    object: Option<Value>,
-    array: Option<Value>,
-    nullish: Option<Value>,
+    recursive: Value,
+    null: Value,
+    string: Value,
+    object: Value,
+    array: Value,
+    nullish: Value,
     value: Value,
 ) -> Resolved {
     let options = CompactOptions {
-        recursive: match recursive {
-            Some(expr) => expr.try_boolean()?,
-            None => true,
-        },
-
-        null: match null {
-            Some(expr) => expr.try_boolean()?,
-            None => true,
-        },
-
-        string: match string {
-            Some(expr) => expr.try_boolean()?,
-            None => true,
-        },
-
-        object: match object {
-            Some(expr) => expr.try_boolean()?,
-            None => true,
-        },
-
-        array: match array {
-            Some(expr) => expr.try_boolean()?,
-            None => true,
-        },
-
-        nullish: match nullish {
-            Some(expr) => expr.try_boolean()?,
-            None => false,
-        },
+        recursive: recursive.try_boolean()?,
+        null: null.try_boolean()?,
+        string: string.try_boolean()?,
+        object: object.try_boolean()?,
+        array: array.try_boolean()?,
+        nullish: nullish.try_boolean()?,
     };
 
     match value {
@@ -61,57 +107,52 @@ impl Function for Compact {
         "compact"
     }
 
+    fn usage(&self) -> &'static str {
+        "Compacts the `value` by removing empty values, where empty values are defined using the available parameters."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Enumerate.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::ARRAY | kind::OBJECT
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &["The return type matches the `value` type."]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "value",
-                kind: kind::OBJECT | kind::ARRAY,
-                required: true,
-            },
-            Parameter {
-                keyword: "recursive",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-            Parameter {
-                keyword: "null",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-            Parameter {
-                keyword: "string",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-            Parameter {
-                keyword: "object",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-            Parameter {
-                keyword: "array",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-            Parameter {
-                keyword: "nullish",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-        ]
+        PARAMETERS.as_slice()
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "object",
+            example! {
+                title: "Compact an object with default parameters",
+                source: r#"compact({"field1": 1, "field2": "", "field3": [], "field4": null})"#,
+                result: Ok(r#"{ "field1": 1 }"#),
+            },
+            example! {
+                title: "Compact an array with default parameters",
+                source: r#"compact(["foo", "bar", "", null, [], "buzz"])"#,
+                result: Ok(r#"["foo","bar","buzz"]"#),
+            },
+            example! {
+                title: "Compact an array using nullish",
+                source: r#"compact(["-", "   ", "\n", null, true], nullish: true)"#,
+                result: Ok("[true]"),
+            },
+            example! {
+                title: "Compact a more complex object with default parameters",
                 source: r#"compact({ "a": {}, "b": null, "c": [null], "d": "", "e": "-", "f": true })"#,
                 result: Ok(r#"{ "e": "-", "f": true }"#),
             },
-            Example {
-                title: "nullish",
-                source: r#"compact(["-", "   ", "\n", null, true], nullish: true)"#,
-                result: Ok("[true]"),
+            example! {
+                title: "Compact a more complex object using null: false",
+                source: r#"compact({ "a": {}, "b": null, "c": [null], "d": "", "e": "-", "f": true }, null: false)"#,
+                result: Ok(r#"{ "b": null, "c": [null], "e": "-", "f": true }"#),
             },
         ]
     }
@@ -199,34 +240,22 @@ impl FunctionExpression for CompactFn {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
         let recursive = self
             .recursive
-            .as_ref()
-            .map(|expr| expr.resolve(ctx))
-            .transpose()?;
+            .map_resolve_with_default(ctx, || DEFAULT_RECURSIVE.clone())?;
         let null = self
             .null
-            .as_ref()
-            .map(|expr| expr.resolve(ctx))
-            .transpose()?;
+            .map_resolve_with_default(ctx, || DEFAULT_NULL.clone())?;
         let string = self
             .string
-            .as_ref()
-            .map(|expr| expr.resolve(ctx))
-            .transpose()?;
+            .map_resolve_with_default(ctx, || DEFAULT_STRING.clone())?;
         let object = self
             .object
-            .as_ref()
-            .map(|expr| expr.resolve(ctx))
-            .transpose()?;
+            .map_resolve_with_default(ctx, || DEFAULT_OBJECT.clone())?;
         let array = self
             .array
-            .as_ref()
-            .map(|expr| expr.resolve(ctx))
-            .transpose()?;
+            .map_resolve_with_default(ctx, || DEFAULT_ARRAY.clone())?;
         let nullish = self
             .nullish
-            .as_ref()
-            .map(|expr| expr.resolve(ctx))
-            .transpose()?;
+            .map_resolve_with_default(ctx, || DEFAULT_NULLISH.clone())?;
         let value = self.value.resolve(ctx)?;
 
         compact(recursive, null, string, object, array, nullish, value)

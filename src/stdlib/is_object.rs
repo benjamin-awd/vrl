@@ -9,30 +9,52 @@ impl Function for IsObject {
         "is_object"
     }
 
+    fn usage(&self) -> &'static str {
+        "Check if `value`'s type is an object."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Type.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "Returns `true` if `value` is an object.",
+            "Returns `false` if `value` is anything else.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The value to check if it is an object.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "string",
-                source: r#"is_object("foobar")"#,
-                result: Ok("false"),
-            },
-            Example {
-                title: "boolean",
-                source: "is_object(true)",
-                result: Ok("false"),
-            },
-            Example {
-                title: "object",
+            example! {
+                title: "Valid object",
                 source: r#"is_object({"foo": "bar"})"#,
                 result: Ok("true"),
+            },
+            example! {
+                title: "Non-matching type",
+                source: r#"is_object("a string")"#,
+                result: Ok("false"),
+            },
+            example! {
+                title: "Boolean",
+                source: "is_object(true)",
+                result: Ok("false"),
             },
         ]
     }

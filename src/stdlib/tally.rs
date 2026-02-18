@@ -32,8 +32,20 @@ impl Function for Tally {
         "tally"
     }
 
+    fn usage(&self) -> &'static str {
+        "Counts the occurrences of each string value in the provided array and returns an object with the counts."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Enumerate.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::OBJECT
+    }
+
     fn examples(&self) -> &'static [Example] {
-        &[Example {
+        &[example! {
             title: "tally",
             source: r#"tally!(["foo", "bar", "foo", "baz"])"#,
             result: Ok(r#"{"foo": 2, "bar": 1, "baz": 1}"#),
@@ -56,6 +68,9 @@ impl Function for Tally {
             keyword: "value",
             kind: kind::ARRAY,
             required: true,
+            description: "The array of strings to count occurrences for.",
+            default: None,
+            enum_variants: None,
         }]
     }
 }

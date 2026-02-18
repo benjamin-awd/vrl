@@ -27,11 +27,30 @@ impl Function for DirName {
         "dirname"
     }
 
+    fn usage(&self) -> &'static str {
+        "Returns the directory component of the given `path`. This is similar to the Unix `dirname` command. The directory component is the path with the final component removed."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::String.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`value` is not a valid string."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::BYTES,
             required: true,
+            description: "The path from which to extract the directory name.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
@@ -48,27 +67,27 @@ impl Function for DirName {
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
+            example! {
                 title: "Extract dirname from file path",
                 source: r#"dirname!("/usr/local/bin/vrl")"#,
                 result: Ok("\"/usr/local/bin\""),
             },
-            Example {
+            example! {
                 title: "Extract dirname from file path with extension",
                 source: r#"dirname!("/home/user/file.txt")"#,
                 result: Ok("\"/home/user\""),
             },
-            Example {
+            example! {
                 title: "Extract dirname from directory path",
                 source: r#"dirname!("/home/user/")"#,
                 result: Ok("\"/home\""),
             },
-            Example {
+            example! {
                 title: "Root directory dirname is itself",
                 source: r#"dirname!("/")"#,
                 result: Ok("\"/\""),
             },
-            Example {
+            example! {
                 title: "Relative files have current directory as dirname",
                 source: r#"dirname!("file.txt")"#,
                 result: Ok("\".\""),

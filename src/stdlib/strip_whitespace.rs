@@ -8,28 +8,48 @@ impl Function for StripWhitespace {
         "strip_whitespace"
     }
 
+    fn usage(&self) -> &'static str {
+        "Strips whitespace from the start and end of `value`, where whitespace is defined by the [Unicode `White_Space` property](https://en.wikipedia.org/wiki/Unicode_character_property#Whitespace)."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::String.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::BYTES,
             required: true,
+            description: "The string to trim.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "start whitespace",
+            example! {
+                title: "Strip whitespace",
+                source: r#"strip_whitespace("  A sentence.  ")"#,
+                result: Ok("A sentence."),
+            },
+            example! {
+                title: "Start whitespace",
                 source: r#"strip_whitespace("  foobar")"#,
                 result: Ok("foobar"),
             },
-            Example {
-                title: "end whitespace",
+            example! {
+                title: "End whitespace",
                 source: r#"strip_whitespace("foo bar  ")"#,
                 result: Ok("foo bar"),
             },
-            Example {
-                title: "newlines",
+            example! {
+                title: "Newlines",
                 source: r#"strip_whitespace("\n\nfoo bar\n  ")"#,
                 result: Ok("foo bar"),
             },

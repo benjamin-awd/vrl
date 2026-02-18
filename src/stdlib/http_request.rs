@@ -11,8 +11,8 @@ use crate::compiler::prelude::*;
 #[allow(clippy::similar_names)]
 mod non_wasm {
     use super::{
-        Context, Expression, ExpressionError, FunctionExpression, Resolved, TypeDef, TypeState,
-        Value, VrlValueConvert,
+        Context, Expression, ExpressionError, ExpressionExt, FunctionExpression, Resolved, TypeDef,
+        TypeState, Value, VrlValueConvert,
     };
     use crate::value::value::ObjectMap;
     use reqwest_middleware::{
@@ -266,9 +266,9 @@ mod non_wasm {
     #[derive(Debug, Clone)]
     pub(super) struct HttpRequestFn {
         pub(super) url: Box<dyn Expression>,
-        pub(super) method: Box<dyn Expression>,
-        pub(super) headers: Box<dyn Expression>,
-        pub(super) body: Box<dyn Expression>,
+        pub(super) method: Option<Box<dyn Expression>>,
+        pub(super) headers: Option<Box<dyn Expression>>,
+        pub(super) body: Option<Box<dyn Expression>>,
         pub(super) client_or_proxies: ClientOrProxies,
         pub(super) redact_headers: Box<dyn Expression>,
     }
@@ -276,9 +276,15 @@ mod non_wasm {
     impl FunctionExpression for HttpRequestFn {
         fn resolve(&self, ctx: &mut Context) -> Resolved {
             let url = self.url.resolve(ctx)?;
-            let method = self.method.resolve(ctx)?;
-            let headers = self.headers.resolve(ctx)?;
-            let body = self.body.resolve(ctx)?;
+            let method = self
+                .method
+                .map_resolve_with_default(ctx, || super::DEFAULT_METHOD.clone())?;
+            let headers = self
+                .headers
+                .map_resolve_with_default(ctx, || super::DEFAULT_HEADERS.clone())?;
+            let body = self
+                .body
+                .map_resolve_with_default(ctx, || super::DEFAULT_BODY.clone())?;
             let client = self.client_or_proxies.get_client(ctx)?;
             let redact_headers = self.redact_headers.resolve(ctx)?.try_boolean()?;
 
@@ -313,12 +319,93 @@ mod non_wasm {
 #[cfg(not(target_arch = "wasm32"))]
 use non_wasm::*;
 
+use std::sync::LazyLock;
+
+static DEFAULT_METHOD: LazyLock<Value> = LazyLock::new(|| Value::Bytes(Bytes::from("get")));
+static DEFAULT_HEADERS: LazyLock<Value> =
+    LazyLock::new(|| Value::Object(std::collections::BTreeMap::new()));
+static DEFAULT_BODY: LazyLock<Value> = LazyLock::new(|| Value::Bytes(Bytes::from("")));
+static DEFAULT_REDACT_HEADERS: LazyLock<Value> = LazyLock::new(|| Value::Boolean(true));
+
+static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
+    vec![
+        Parameter {
+            keyword: "url",
+            kind: kind::BYTES,
+            required: true,
+            description: "The URL to make the HTTP request to.",
+            default: None,
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "method",
+            kind: kind::BYTES,
+            required: false,
+            description: "The HTTP method to use (e.g., GET, POST, PUT, DELETE). Defaults to GET.",
+            default: Some(&DEFAULT_METHOD),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "headers",
+            kind: kind::OBJECT,
+            required: false,
+            description: "An object containing HTTP headers to send with the request.",
+            default: Some(&DEFAULT_HEADERS),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "body",
+            kind: kind::BYTES,
+            required: false,
+            description: "The request body content to send.",
+            default: Some(&DEFAULT_BODY),
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "http_proxy",
+            kind: kind::BYTES,
+            required: false,
+            description: "HTTP proxy URL to use for the request.",
+            default: None,
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "https_proxy",
+            kind: kind::BYTES,
+            required: false,
+            description: "HTTPS proxy URL to use for the request.",
+            default: None,
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "redact_headers",
+            kind: kind::BOOLEAN,
+            required: false,
+            description: "Whether to redact sensitive header values in error messages. Defaults to true.",
+            default: Some(&DEFAULT_REDACT_HEADERS),
+            enum_variants: None,
+        },
+    ]
+});
+
 #[derive(Clone, Copy, Debug)]
 pub struct HttpRequest;
 
 impl Function for HttpRequest {
     fn identifier(&self) -> &'static str {
         "http_request"
+    }
+
+    fn usage(&self) -> &'static str {
+        "Makes an HTTP request to the specified URL. This function performs synchronous blocking operations and is not recommended for frequent or performance-critical workflows due to potential network-related delays."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::System.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
     }
 
     #[cfg(not(feature = "test"))]
@@ -329,24 +416,24 @@ impl Function for HttpRequest {
     #[cfg(feature = "test")]
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
+            example! {
                 title: "Basic HTTP request",
                 source: r#"http_request("https://httpbin.org/get")"#,
                 result: Ok(
                     r#"{"args":{},"headers":{"Accept":"*/*","Host":"httpbin.org"},"url":"https://httpbin.org/get"}"#,
                 ),
             },
-            Example {
+            example! {
                 title: "HTTP request with bearer token",
                 source: r#"http_request("https://httpbin.org/bearer", headers: {"Authorization": "Bearer my_token"})"#,
                 result: Ok(r#"{"authenticated":true,"token":"my_token"}"#),
             },
-            Example {
+            example! {
                 title: "HTTP PUT request",
                 source: r#"http_request("https://httpbin.org/put", method: "put")"#,
                 result: Ok(r#"{"args":{},"data": "","url": "https://httpbin.org/put"}"#),
             },
-            Example {
+            example! {
                 title: "HTTP POST request with body",
                 source: r#"http_request("https://httpbin.org/post", method: "post", body: "{\"data\":{\"hello\":\"world\"}}")"#,
                 result: Ok(r#"{"data":"{\"data\":{\"hello\":\"world\"}}"}"#),
@@ -355,43 +442,7 @@ impl Function for HttpRequest {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "url",
-                kind: kind::BYTES,
-                required: true,
-            },
-            Parameter {
-                keyword: "method",
-                kind: kind::BYTES,
-                required: false,
-            },
-            Parameter {
-                keyword: "headers",
-                kind: kind::OBJECT,
-                required: false,
-            },
-            Parameter {
-                keyword: "body",
-                kind: kind::BYTES,
-                required: false,
-            },
-            Parameter {
-                keyword: "http_proxy",
-                kind: kind::BYTES,
-                required: false,
-            },
-            Parameter {
-                keyword: "https_proxy",
-                kind: kind::BYTES,
-                required: false,
-            },
-            Parameter {
-                keyword: "redact_headers",
-                kind: kind::BOOLEAN,
-                required: false,
-            },
-        ]
+        PARAMETERS.as_slice()
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -403,9 +454,9 @@ impl Function for HttpRequest {
         arguments: ArgumentList,
     ) -> Compiled {
         let url = arguments.required("url");
-        let method = arguments.optional("method").unwrap_or_else(|| expr!("get"));
-        let headers = arguments.optional("headers").unwrap_or_else(|| expr!({}));
-        let body = arguments.optional("body").unwrap_or_else(|| expr!(""));
+        let method = arguments.optional("method");
+        let headers = arguments.optional("headers");
+        let body = arguments.optional("body");
         let http_proxy = arguments.optional("http_proxy");
         let https_proxy = arguments.optional("https_proxy");
         let redact_headers = arguments
@@ -460,9 +511,9 @@ mod tests {
     async fn test_basic_get_request() {
         let func: HttpRequestFn = HttpRequestFn {
             url: expr!("https://httpbin.org/get"),
-            method: expr!("get"),
-            headers: expr!({}),
-            body: expr!(""),
+            method: Some(expr!("get")),
+            headers: Some(expr!({})),
+            body: Some(expr!("")),
             client_or_proxies: ClientOrProxies::no_proxies(),
             redact_headers: expr!(true),
         };
@@ -483,9 +534,9 @@ mod tests {
     async fn test_malformed_url() {
         let func = HttpRequestFn {
             url: expr!("not-a-valid-url"),
-            method: expr!("get"),
-            headers: expr!({}),
-            body: expr!(""),
+            method: Some(expr!("get")),
+            headers: Some(expr!({})),
+            body: Some(expr!("")),
             client_or_proxies: ClientOrProxies::no_proxies(),
             redact_headers: expr!(true),
         };
@@ -500,9 +551,9 @@ mod tests {
     async fn test_invalid_header() {
         let func = HttpRequestFn {
             url: expr!("https://httpbin.org/get"),
-            method: expr!("get"),
-            headers: expr!({"Invalid Header With Spaces": "value"}),
-            body: expr!(""),
+            method: Some(expr!("get")),
+            headers: Some(expr!({"Invalid Header With Spaces": "value"})),
+            body: Some(expr!("")),
             client_or_proxies: ClientOrProxies::no_proxies(),
             redact_headers: expr!(true),
         };
@@ -517,9 +568,9 @@ mod tests {
     async fn test_invalid_proxy() {
         let func = HttpRequestFn {
             url: expr!("https://httpbin.org/get"),
-            method: expr!("get"),
-            headers: expr!({}),
-            body: expr!(""),
+            method: Some(expr!("get")),
+            headers: Some(expr!({})),
+            body: Some(expr!("")),
             client_or_proxies: ClientOrProxies::new_proxies_no_const_resolve(
                 None,
                 Some(expr!("not^a&valid*url")),
@@ -537,16 +588,16 @@ mod tests {
     async fn test_sensitive_headers_redacted() {
         let func = HttpRequestFn {
             url: expr!("not-a-valid-url"),
-            method: expr!("get"),
-            headers: expr!({
+            method: Some(expr!("get")),
+            headers: Some(expr!({
                 "Authorization": "Bearer super_secret_12345",
                 "X-Api-Key": "key-67890",
                 "Content-Type": "application/json",
                 "Cookie": "session=abcdef",
                 "X-Custom-Token": "another-secret",
                 "User-Agent": "VRL/0.28"
-            }),
-            body: expr!(""),
+            })),
+            body: Some(expr!("")),
             client_or_proxies: ClientOrProxies::no_proxies(),
             redact_headers: expr!(true),
         };
@@ -585,12 +636,12 @@ mod tests {
     async fn test_redact_headers_disabled() {
         let func = HttpRequestFn {
             url: expr!("not-a-valid-url"),
-            method: expr!("get"),
-            headers: expr!({
+            method: Some(expr!("get")),
+            headers: Some(expr!({
                 "Authorization": "Bearer super_secret_12345",
                 "Content-Type": "application/json"
-            }),
-            body: expr!(""),
+            })),
+            body: Some(expr!("")),
             client_or_proxies: ClientOrProxies::no_proxies(),
             redact_headers: expr!(false),
         };

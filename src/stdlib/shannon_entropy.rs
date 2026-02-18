@@ -2,7 +2,53 @@ use std::{collections::HashMap, str::FromStr};
 
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::compiler::function::EnumVariant;
 use crate::compiler::prelude::*;
+use std::sync::LazyLock;
+
+static DEFAULT_SEGMENTATION: LazyLock<Value> = LazyLock::new(|| Value::Bytes(Bytes::from("byte")));
+
+static SEGMENTATION_ENUM: &[EnumVariant] = &[
+    EnumVariant {
+        value: "byte",
+        description: "Considers individual bytes when calculating entropy",
+    },
+    EnumVariant {
+        value: "codepoint",
+        description: "Considers codepoints when calculating entropy",
+    },
+    EnumVariant {
+        value: "grapheme",
+        description: "Considers graphemes when calculating entropy",
+    },
+];
+
+static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
+    vec![
+        Parameter {
+            keyword: "value",
+            kind: kind::BYTES,
+            required: true,
+            description: "The input string.",
+            default: None,
+            enum_variants: None,
+        },
+        Parameter {
+            keyword: "segmentation",
+            kind: kind::BYTES,
+            required: false,
+            description:
+                "Defines how to split the string to calculate entropy, based on occurrences of
+segments.
+
+Byte segmentation is the fastest, but it might give undesired results when handling
+UTF-8 strings, while grapheme segmentation is the slowest, but most correct in these
+cases.",
+            default: Some(&DEFAULT_SEGMENTATION),
+            enum_variants: Some(SEGMENTATION_ENUM),
+        },
+    ]
+});
 
 // Casting to f64 in this function is only done to enable proper division (when calculating probability)
 // Since numbers being casted represent lenghts of input strings and number of character occurences,
@@ -103,35 +149,41 @@ impl Function for ShannonEntropy {
         "shannon_entropy"
     }
 
+    fn usage(&self) -> &'static str {
+        "Generates [Shannon entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory)) from given string. It can generate it based on string bytes, codepoints, or graphemes."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::String.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::FLOAT
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "value",
-                kind: kind::BYTES,
-                required: true,
-            },
-            Parameter {
-                keyword: "segmentation",
-                kind: kind::BYTES,
-                required: false,
-            },
-        ]
+        PARAMETERS.as_slice()
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "shannon_entropy simple",
+            example! {
+                title: "Simple byte segmentation example",
                 source: r#"floor(shannon_entropy("vector.dev"), precision: 4)"#,
                 result: Ok("2.9219"),
             },
-            Example {
-                title: "shannon_entropy UTF-8 wrong segmentation",
+            example! {
+                title: "UTF-8 string with bytes segmentation",
                 source: r#"floor(shannon_entropy("test123%456.فوائد.net."), precision: 4)"#,
                 result: Ok("4.0784"),
             },
-            Example {
-                title: "shannon_entropy UTF-8 grapheme segmentation",
+            example! {
+                title: "UTF-8 string with grapheme segmentation",
+                source: r#"floor(shannon_entropy("test123%456.فوائد.net.", segmentation: "grapheme"), precision: 4)"#,
+                result: Ok("3.9362"),
+            },
+            example! {
+                title: "UTF-8 emoji (7 Unicode scalar values) with grapheme segmentation",
                 source: r#"shannon_entropy("👨‍👩‍👧‍👦", segmentation: "grapheme")"#,
                 result: Ok("0.0"),
             },
@@ -151,11 +203,10 @@ impl Function for ShannonEntropy {
                 &["byte".into(), "codepoint".into(), "grapheme".into()],
                 state,
             )?
-            .map(|s| {
-                Segmentation::from_str(&s.try_bytes_utf8_lossy().expect("segmentation not bytes"))
-                    .expect("validated enum")
-            })
-            .unwrap_or_default();
+            .unwrap_or_else(|| DEFAULT_SEGMENTATION.clone())
+            .try_bytes_utf8_lossy()
+            .map(|s| Segmentation::from_str(&s).expect("validated enum"))
+            .expect("segmentation not bytes");
 
         Ok(ShannonEntropyFn {
             value,

@@ -9,28 +9,55 @@ impl Function for IsArray {
         "is_array"
     }
 
+    fn usage(&self) -> &'static str {
+        "Check if the `value`'s type is an array."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Type.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BOOLEAN
+    }
+
+    fn return_rules(&self) -> &'static [&'static str] {
+        &[
+            "Returns `true` if `value` is an array.",
+            "Returns `false` if `value` is anything else.",
+        ]
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The value to check if it is an array.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "array",
+            example! {
+                title: "Valid array",
                 source: "is_array([1, 2, 3])",
                 result: Ok("true"),
             },
-            Example {
-                title: "boolean",
+            example! {
+                title: "Non-matching type",
+                source: r#"is_array("a string")"#,
+                result: Ok("false"),
+            },
+            example! {
+                title: "Boolean",
                 source: "is_array(true)",
                 result: Ok("false"),
             },
-            Example {
-                title: "null",
+            example! {
+                title: "Null",
                 source: "is_array(null)",
                 result: Ok("false"),
             },

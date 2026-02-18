@@ -1,6 +1,6 @@
 use crate::compiler::prelude::*;
 
-use crate::stdlib::casing::into_case;
+use crate::stdlib::casing::{ORIGINAL_CASE, into_case};
 use convert_case::Case;
 
 #[derive(Clone, Copy, Debug)]
@@ -11,19 +11,32 @@ impl Function for ScreamingSnakecase {
         "screamingsnakecase"
     }
 
+    fn usage(&self) -> &'static str {
+        "Takes the `value` string, and turns it into SCREAMING_SNAKE case. Optionally, you can pass in the existing case of the function, or else we will try to figure out the case automatically."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::String.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::BYTES
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
-        &[
+        const PARAMETERS: &[Parameter] = &[
             Parameter {
                 keyword: "value",
                 kind: kind::BYTES,
                 required: true,
+                description: "The string to convert to SCREAMING_SNAKE case.",
+                default: None,
+                enum_variants: None,
             },
-            Parameter {
-                keyword: "original_case",
-                kind: kind::BYTES,
-                required: false,
-            },
-        ]
+            ORIGINAL_CASE,
+        ];
+
+        PARAMETERS
     }
 
     fn compile(
@@ -52,11 +65,23 @@ impl Function for ScreamingSnakecase {
     }
 
     fn examples(&self) -> &'static [Example] {
-        &[Example {
-            title: "screamingsnakecase",
-            source: r#"screamingsnakecase("input_string")"#,
-            result: Ok("INPUT_STRING"),
-        }]
+        &[
+            example! {
+                title: "SCREAMING_SNAKE_CASE a string without specifying original case",
+                source: r#"screamingsnakecase("input-string")"#,
+                result: Ok("INPUT_STRING"),
+            },
+            example! {
+                title: "SCREAMING_SNAKE_CASE a snake_case string",
+                source: r#"screamingsnakecase("foo_bar_baz", "snake_case")"#,
+                result: Ok("FOO_BAR_BAZ"),
+            },
+            example! {
+                title: "SCREAMING_SNAKE_CASE specifying the wrong original case (capitalizes but doesn't include `_` properly)",
+                source: r#"screamingsnakecase("FooBarBaz", "kebab-case")"#,
+                result: Ok("FOOBARBAZ"),
+            },
+        ]
     }
 }
 

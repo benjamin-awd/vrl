@@ -9,15 +9,32 @@ impl Function for TagTypesExternally {
         "tag_types_externally"
     }
 
+    fn usage(&self) -> &'static str {
+        indoc! {"
+            Adds type information to all (nested) scalar values in the provided `value`.
+
+            The type information is added externally, meaning that `value` has the form of `\"type\": value` after this
+            transformation.
+        "}
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Type.as_ref()
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::OBJECT | kind::ARRAY | kind::NULL
+    }
+
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "scalar",
+            example! {
+                title: "Tag types externally (scalar)",
                 source: "tag_types_externally(123)",
                 result: Ok(r#"{ "integer": 123 }"#),
             },
-            Example {
-                title: "object",
+            example! {
+                title: "Tag types externally (object)",
                 source: indoc! {r#"
                     tag_types_externally({
                         "message": "Hello world",
@@ -30,13 +47,13 @@ impl Function for TagTypesExternally {
                     r#"{ "message": { "string": "Hello world" }, "request": { "duration_ms": { "float": 67.9 } } }"#,
                 ),
             },
-            Example {
-                title: "array",
+            example! {
+                title: "Tag types externally (array)",
                 source: r#"tag_types_externally(["foo", "bar"])"#,
                 result: Ok(r#"[{ "string": "foo" }, { "string": "bar" }]"#),
             },
-            Example {
-                title: "null",
+            example! {
+                title: "Tag types externally (null)",
                 source: "tag_types_externally(null)",
                 result: Ok("null"),
             },
@@ -59,6 +76,9 @@ impl Function for TagTypesExternally {
             keyword: "value",
             kind: kind::ANY,
             required: true,
+            description: "The value to tag with types.",
+            default: None,
+            enum_variants: None,
         }]
     }
 }

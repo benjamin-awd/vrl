@@ -41,22 +41,41 @@ impl Function for ToSyslogFacilityCode {
         "to_syslog_facility_code"
     }
 
+    fn usage(&self) -> &'static str {
+        "Converts the `value`, a Syslog [facility keyword](https://en.wikipedia.org/wiki/Syslog#Facility), into a Syslog integer facility code (`0` to `23`)."
+    }
+
+    fn category(&self) -> &'static str {
+        Category::Convert.as_ref()
+    }
+
+    fn internal_failure_reasons(&self) -> &'static [&'static str] {
+        &["`value` is not a valid Syslog facility keyword."]
+    }
+
+    fn return_kind(&self) -> u16 {
+        kind::INTEGER
+    }
+
     fn parameters(&self) -> &'static [Parameter] {
         &[Parameter {
             keyword: "value",
             kind: kind::BYTES,
             required: true,
+            description: "The Syslog facility keyword to convert.",
+            default: None,
+            enum_variants: None,
         }]
     }
 
     fn examples(&self) -> &'static [Example] {
         &[
-            Example {
-                title: "valid",
-                source: "to_syslog_facility_code!(s'kern')",
-                result: Ok("0"),
+            example! {
+                title: "Coerce to Syslog facility code",
+                source: r#"to_syslog_facility_code!("authpriv")"#,
+                result: Ok("10"),
             },
-            Example {
+            example! {
                 title: "invalid",
                 source: "to_syslog_facility_code!(s'foobar')",
                 result: Err(

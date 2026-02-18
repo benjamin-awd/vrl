@@ -357,7 +357,7 @@ static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
         Parameter::optional(
             "redact_headers",
             kind::BOOLEAN,
-            "Whether to redact sensitive header values in error messages. Defaults to true.",
+            "Whether to redact sensitive header values in error messages.",
         )
         .default(&DEFAULT_REDACT_HEADERS),
     ]

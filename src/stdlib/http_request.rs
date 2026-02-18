@@ -270,7 +270,7 @@ mod non_wasm {
         pub(super) headers: Option<Box<dyn Expression>>,
         pub(super) body: Option<Box<dyn Expression>>,
         pub(super) client_or_proxies: ClientOrProxies,
-        pub(super) redact_headers: Box<dyn Expression>,
+        pub(super) redact_headers: Option<Box<dyn Expression>>,
     }
 
     impl FunctionExpression for HttpRequestFn {
@@ -286,7 +286,10 @@ mod non_wasm {
                 .body
                 .map_resolve_with_default(ctx, || super::DEFAULT_BODY.clone())?;
             let client = self.client_or_proxies.get_client(ctx)?;
-            let redact_headers = self.redact_headers.resolve(ctx)?.try_boolean()?;
+            let redact_headers = self
+                .redact_headers
+                .map_resolve_with_default(ctx, || super::DEFAULT_REDACT_HEADERS.clone())?
+                .try_boolean()?;
 
             // block_in_place runs the HTTP request synchronously
             // without blocking Tokio's async worker threads.
@@ -434,9 +437,7 @@ impl Function for HttpRequest {
         let body = arguments.optional("body");
         let http_proxy = arguments.optional("http_proxy");
         let https_proxy = arguments.optional("https_proxy");
-        let redact_headers = arguments
-            .optional("redact_headers")
-            .unwrap_or_else(|| expr!(true));
+        let redact_headers = arguments.optional("redact_headers");
 
         let client_or_proxies = ClientOrProxies::new(state, http_proxy, https_proxy)
             .map_err(|err| Box::new(err) as Box<dyn DiagnosticMessage>)?;

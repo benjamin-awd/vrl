@@ -274,54 +274,31 @@ static DEFAULT_BODY: LazyLock<Value> = LazyLock::new(|| Value::Bytes(Bytes::from
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "url",
-            kind: kind::BYTES,
-            required: true,
-            description: "The URL to make the HTTP request to.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "method",
-            kind: kind::BYTES,
-            required: false,
-            description: "The HTTP method to use (e.g., GET, POST, PUT, DELETE). Defaults to GET.",
-            default: Some(&DEFAULT_METHOD),
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "headers",
-            kind: kind::OBJECT,
-            required: false,
-            description: "An object containing HTTP headers to send with the request.",
-            default: Some(&DEFAULT_HEADERS),
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "body",
-            kind: kind::BYTES,
-            required: false,
-            description: "The request body content to send.",
-            default: Some(&DEFAULT_BODY),
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "http_proxy",
-            kind: kind::BYTES,
-            required: false,
-            description: "HTTP proxy URL to use for the request.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "https_proxy",
-            kind: kind::BYTES,
-            required: false,
-            description: "HTTPS proxy URL to use for the request.",
-            default: None,
-            enum_variants: None,
-        },
+        Parameter::required("url", kind::BYTES, "The URL to make the HTTP request to."),
+        Parameter::optional(
+            "method",
+            kind::BYTES,
+            "The HTTP method to use (e.g., GET, POST, PUT, DELETE). Defaults to GET.",
+        )
+        .default(&DEFAULT_METHOD),
+        Parameter::optional(
+            "headers",
+            kind::OBJECT,
+            "An object containing HTTP headers to send with the request.",
+        )
+        .default(&DEFAULT_HEADERS),
+        Parameter::optional("body", kind::BYTES, "The request body content to send.")
+            .default(&DEFAULT_BODY),
+        Parameter::optional(
+            "http_proxy",
+            kind::BYTES,
+            "HTTP proxy URL to use for the request.",
+        ),
+        Parameter::optional(
+            "https_proxy",
+            kind::BYTES,
+            "HTTPS proxy URL to use for the request.",
+        ),
     ]
 });
 

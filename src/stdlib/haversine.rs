@@ -94,57 +94,28 @@ impl Function for Haversine {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "latitude1",
-                kind: kind::FLOAT,
-                required: true,
-                description: "Latitude of the first point.",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "longitude1",
-                kind: kind::FLOAT,
-                required: true,
-                description: "Longitude of the first point.",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "latitude2",
-                kind: kind::FLOAT,
-                required: true,
-                description: "Latitude of the second point.",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "longitude2",
-                kind: kind::FLOAT,
-                required: true,
-                description: "Longitude of the second point.",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "measurement_unit",
-                kind: kind::BYTES,
-                required: false,
-                description: "Measurement system to use for resulting distance.",
-                default: None,
-                enum_variants: Some(&[
-                    EnumVariant {
-                        value: "kilometers",
-                        description: "Use kilometers for the resulting distance.",
-                    },
-                    EnumVariant {
-                        value: "miles",
-                        description: "Use miles for the resulting distance.",
-                    },
-                ]),
-            },
-        ]
+        const PARAMETERS: &[Parameter] = &[
+            Parameter::required("latitude1", kind::FLOAT, "Latitude of the first point."),
+            Parameter::required("longitude1", kind::FLOAT, "Longitude of the first point."),
+            Parameter::required("latitude2", kind::FLOAT, "Latitude of the second point."),
+            Parameter::required("longitude2", kind::FLOAT, "Longitude of the second point."),
+            Parameter::optional(
+                "measurement_unit",
+                kind::BYTES,
+                "Measurement system to use for resulting distance.",
+            )
+            .enum_variants(&[
+                EnumVariant {
+                    value: "kilometers",
+                    description: "Use kilometers for the resulting distance.",
+                },
+                EnumVariant {
+                    value: "miles",
+                    description: "Use miles for the resulting distance.",
+                },
+            ]),
+        ];
+        PARAMETERS
     }
 
     fn compile(

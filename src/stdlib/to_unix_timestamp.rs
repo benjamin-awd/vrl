@@ -22,22 +22,14 @@ static UNIT_ENUM: &[EnumVariant] = &[
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::TIMESTAMP,
-            required: true,
-            description: "The timestamp to convert into a Unix timestamp.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "unit",
-            kind: kind::BYTES,
-            required: false,
-            description: "The time unit.",
-            default: Some(&DEFAULT_UNIT),
-            enum_variants: Some(UNIT_ENUM),
-        },
+        Parameter::required(
+            "value",
+            kind::TIMESTAMP,
+            "The timestamp to convert into a Unix timestamp.",
+        ),
+        Parameter::optional("unit", kind::BYTES, "The time unit.")
+            .default(&DEFAULT_UNIT)
+            .enum_variants(UNIT_ENUM),
     ]
 });
 

@@ -21,14 +21,12 @@ impl Function for StripWhitespace {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to trim.",
-            default: None,
-            enum_variants: None,
-        }]
+        const PARAMETERS: &[Parameter] = &[Parameter::required(
+            "value",
+            kind::BYTES,
+            "The string to trim.",
+        )];
+        PARAMETERS
     }
 
     fn examples(&self) -> &'static [Example] {

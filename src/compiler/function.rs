@@ -224,6 +224,46 @@ pub struct Parameter {
 }
 
 impl Parameter {
+    /// Create a required parameter with default values for `default` and `enum_variants`.
+    #[must_use]
+    pub const fn required(keyword: &'static str, kind: u16, description: &'static str) -> Self {
+        Self {
+            keyword,
+            kind,
+            required: true,
+            description,
+            default: None,
+            enum_variants: None,
+        }
+    }
+
+    /// Create an optional parameter with default values for `default` and `enum_variants`.
+    #[must_use]
+    pub const fn optional(keyword: &'static str, kind: u16, description: &'static str) -> Self {
+        Self {
+            keyword,
+            kind,
+            required: false,
+            description,
+            default: None,
+            enum_variants: None,
+        }
+    }
+
+    /// Set the default value for this parameter.
+    #[must_use]
+    pub const fn default(mut self, value: &'static Value) -> Self {
+        self.default = Some(value);
+        self
+    }
+
+    /// Set the enum variants for this parameter.
+    #[must_use]
+    pub const fn enum_variants(mut self, variants: &'static [EnumVariant]) -> Self {
+        self.enum_variants = Some(variants);
+        self
+    }
+
     #[allow(arithmetic_overflow)]
     #[must_use]
     pub fn kind(&self) -> Kind {
@@ -706,14 +746,7 @@ mod tests {
                 },
             ),
         ]) {
-            let parameter = Parameter {
-                keyword: "",
-                kind: parameter_kind,
-                required: false,
-                description: "",
-                default: None,
-                enum_variants: None,
-            };
+            let parameter = Parameter::optional("", parameter_kind, "");
 
             assert_eq!(parameter.kind(), kind, "{title}");
         }

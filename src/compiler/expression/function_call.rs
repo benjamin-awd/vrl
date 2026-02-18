@@ -1289,32 +1289,13 @@ mod tests {
         }
 
         fn parameters(&self) -> &'static [Parameter] {
-            &[
-                Parameter {
-                    keyword: "one",
-                    kind: kind::INTEGER,
-                    required: false,
-                    description: "one",
-                    default: None,
-                    enum_variants: None,
-                },
-                Parameter {
-                    keyword: "two",
-                    kind: kind::INTEGER,
-                    required: false,
-                    description: "two",
-                    default: None,
-                    enum_variants: None,
-                },
-                Parameter {
-                    keyword: "three",
-                    kind: kind::INTEGER,
-                    required: false,
-                    description: "three",
-                    default: None,
-                    enum_variants: None,
-                },
-            ]
+            const PARAMETERS: &[Parameter] = &[
+                Parameter::optional("one", kind::INTEGER, "one"),
+                Parameter::optional("two", kind::INTEGER, "two"),
+                Parameter::optional("three", kind::INTEGER, "three"),
+            ];
+
+            PARAMETERS
         }
 
         fn compile(

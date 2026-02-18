@@ -6,38 +6,24 @@ static DEFAULT_REPLACE_REPEATED: LazyLock<Value> = LazyLock::new(|| Value::Bytes
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The original string.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "permitted_characters",
-            kind: kind::REGEX,
-            required: true,
-            description: "Keep all matches of this pattern.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "replace_single",
-            kind: kind::BYTES,
-            required: false,
-            description: "The string to use to replace single rejected characters.",
-            default: Some(&DEFAULT_REPLACE_SINGLE),
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "replace_repeated",
-            kind: kind::BYTES,
-            required: false,
-            description: "The string to use to replace multiple sequential instances of rejected characters.",
-            default: Some(&DEFAULT_REPLACE_REPEATED),
-            enum_variants: None,
-        },
+        Parameter::required("value", kind::BYTES, "The original string."),
+        Parameter::required(
+            "permitted_characters",
+            kind::REGEX,
+            "Keep all matches of this pattern.",
+        ),
+        Parameter::optional(
+            "replace_single",
+            kind::BYTES,
+            "The string to use to replace single rejected characters.",
+        )
+        .default(&DEFAULT_REPLACE_SINGLE),
+        Parameter::optional(
+            "replace_repeated",
+            kind::BYTES,
+            "The string to use to replace multiple sequential instances of rejected characters.",
+        )
+        .default(&DEFAULT_REPLACE_REPEATED),
     ]
 });
 

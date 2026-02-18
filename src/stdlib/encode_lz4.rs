@@ -7,22 +7,13 @@ static DEFAULT_PREPEND_SIZE: LazyLock<Value> = LazyLock::new(|| Value::Boolean(t
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to encode.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "prepend_size",
-            kind: kind::BOOLEAN,
-            required: false,
-            description: "Whether to prepend the original size to the compressed data.",
-            default: Some(&DEFAULT_PREPEND_SIZE),
-            enum_variants: None,
-        },
+        Parameter::required("value", kind::BYTES, "The string to encode."),
+        Parameter::optional(
+            "prepend_size",
+            kind::BOOLEAN,
+            "Whether to prepend the original size to the compressed data.",
+        )
+        .default(&DEFAULT_PREPEND_SIZE),
     ]
 });
 

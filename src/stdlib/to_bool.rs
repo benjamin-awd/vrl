@@ -52,14 +52,12 @@ impl Function for ToBool {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[Parameter {
-            keyword: "value",
-            kind: kind::ANY,
-            required: true,
-            description: "The value to convert to a Boolean.",
-            default: None,
-            enum_variants: None,
-        }]
+        const PARAMETERS: &[Parameter] = &[Parameter::required(
+            "value",
+            kind::ANY,
+            "The value to convert to a Boolean.",
+        )];
+        PARAMETERS
     }
 
     #[allow(clippy::too_many_lines)]

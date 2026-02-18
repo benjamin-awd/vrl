@@ -41,22 +41,14 @@ static MODE_ENUM: &[EnumVariant] = &[
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to parse.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "mode",
-            kind: kind::BYTES,
-            required: false,
-            description: "Determines performance and reliability characteristics.",
-            default: Some(&DEFAULT_MODE),
-            enum_variants: Some(MODE_ENUM),
-        },
+        Parameter::required("value", kind::BYTES, "The string to parse."),
+        Parameter::optional(
+            "mode",
+            kind::BYTES,
+            "Determines performance and reliability characteristics.",
+        )
+        .default(&DEFAULT_MODE)
+        .enum_variants(MODE_ENUM),
     ]
 });
 

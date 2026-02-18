@@ -48,24 +48,11 @@ impl Function for RandomInt {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "min",
-                kind: kind::INTEGER,
-                required: true,
-                description: "Minimum value (inclusive).",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "max",
-                kind: kind::INTEGER,
-                required: true,
-                description: "Maximum value (exclusive).",
-                default: None,
-                enum_variants: None,
-            },
-        ]
+        const PARAMETERS: &[Parameter] = &[
+            Parameter::required("min", kind::INTEGER, "Minimum value (inclusive)."),
+            Parameter::required("max", kind::INTEGER, "Maximum value (exclusive)."),
+        ];
+        PARAMETERS
     }
 
     fn examples(&self) -> &'static [Example] {

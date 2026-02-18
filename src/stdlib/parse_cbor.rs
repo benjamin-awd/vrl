@@ -95,14 +95,12 @@ impl Function for ParseCbor {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The CBOR payload to parse.",
-            default: None,
-            enum_variants: None,
-        }]
+        const PARAMETERS: &[Parameter] = &[Parameter::required(
+            "value",
+            kind::BYTES,
+            "The CBOR payload to parse.",
+        )];
+        PARAMETERS
     }
 }
 

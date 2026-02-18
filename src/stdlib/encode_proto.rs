@@ -66,37 +66,28 @@ impl Function for EncodeProto {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "value",
-                kind: kind::ANY,
-                required: true,
-                description: "The object to convert to a protocol buffer payload.",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "desc_file",
-                kind: kind::BYTES,
-                required: true,
-                description:
-                    "The path to the protobuf descriptor set file. Must be a literal string.
+        const PARAMETERS: &[Parameter] = &[
+            Parameter::required(
+                "value",
+                kind::ANY,
+                "The object to convert to a protocol buffer payload.",
+            ),
+            Parameter::required(
+                "desc_file",
+                kind::BYTES,
+                "The path to the protobuf descriptor set file. Must be a literal string.
 
 This file is the output of protoc -o <path> ...",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "message_type",
-                kind: kind::BYTES,
-                required: true,
-                description: "The name of the message type to use for serializing.
+            ),
+            Parameter::required(
+                "message_type",
+                kind::BYTES,
+                "The name of the message type to use for serializing.
 
 Must be a literal string.",
-                default: None,
-                enum_variants: None,
-            },
-        ]
+            ),
+        ];
+        PARAMETERS
     }
 
     fn examples(&self) -> &'static [Example] {

@@ -7,22 +7,17 @@ static DEFAULT_SEPARATOR: LazyLock<Value> = LazyLock::new(|| Value::Bytes(Bytes:
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::OBJECT | kind::ARRAY,
-            required: true,
-            description: "The array or object to flatten.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "separator",
-            kind: kind::BYTES,
-            required: false,
-            description: "The separator to join nested keys",
-            default: Some(&DEFAULT_SEPARATOR),
-            enum_variants: None,
-        },
+        Parameter::required(
+            "value",
+            kind::OBJECT | kind::ARRAY,
+            "The array or object to flatten.",
+        ),
+        Parameter::optional(
+            "separator",
+            kind::BYTES,
+            "The separator to join nested keys",
+        )
+        .default(&DEFAULT_SEPARATOR),
     ]
 });
 

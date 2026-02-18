@@ -30,22 +30,17 @@ static VARIANT_ENUM: &[EnumVariant] = &[
 ];
 
 static PARAMETERS: &[Parameter] = &[
-    Parameter {
-        keyword: "value",
-        kind: kind::BYTES,
-        required: true,
-        description: "The value to check if it is a valid JSON document.",
-        default: None,
-        enum_variants: None,
-    },
-    Parameter {
-        keyword: "variant",
-        kind: kind::BYTES,
-        required: false,
-        description: "The variant of the JSON type to explicitly check for.",
-        default: None,
-        enum_variants: Some(VARIANT_ENUM),
-    },
+    Parameter::required(
+        "value",
+        kind::BYTES,
+        "The value to check if it is a valid JSON document.",
+    ),
+    Parameter::optional(
+        "variant",
+        kind::BYTES,
+        "The variant of the JSON type to explicitly check for.",
+    )
+    .enum_variants(VARIANT_ENUM),
 ];
 
 fn is_json(value: Value) -> Resolved {

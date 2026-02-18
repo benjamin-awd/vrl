@@ -334,38 +334,13 @@ static DEFAULT_OPTIONS: LazyLock<Value> =
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The domain name to query.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "qtype",
-            kind: kind::BYTES,
-            required: false,
-            description: "The DNS record type to query (e.g., A, AAAA, MX, TXT). Defaults to A.",
-            default: Some(&DEFAULT_QTYPE),
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "class",
-            kind: kind::BYTES,
-            required: false,
-            description: "The DNS query class. Defaults to IN (Internet).",
-            default: Some(&DEFAULT_CLASS),
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "options",
-            kind: kind::OBJECT,
-            required: false,
-            description: "DNS resolver options. Supported fields: servers (array of nameserver addresses), timeout (seconds), attempts (number of retry attempts), ndots, aa_only, tcp, recurse, rotate.",
-            default: Some(&DEFAULT_OPTIONS),
-            enum_variants: None,
-        },
+        Parameter::required("value", kind::BYTES, "The domain name to query."),
+        Parameter::optional("qtype", kind::BYTES, "The DNS record type to query (e.g., A, AAAA, MX, TXT). Defaults to A.")
+            .default(&DEFAULT_QTYPE),
+        Parameter::optional("class", kind::BYTES, "The DNS query class. Defaults to IN (Internet).")
+            .default(&DEFAULT_CLASS),
+        Parameter::optional("options", kind::OBJECT, "DNS resolver options. Supported fields: servers (array of nameserver addresses), timeout (seconds), attempts (number of retry attempts), ndots, aa_only, tcp, recurse, rotate.")
+            .default(&DEFAULT_OPTIONS),
     ]
 });
 

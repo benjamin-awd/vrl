@@ -43,30 +43,19 @@ static ALGORITHM_ENUM: &[EnumVariant] = &[
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to calculate the HMAC for.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "key",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to use as the cryptographic key.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "algorithm",
-            kind: kind::BYTES,
-            required: false,
-            description: "The hashing algorithm to use.",
-            default: Some(&DEFAULT_ALGORITHM),
-            enum_variants: Some(ALGORITHM_ENUM),
-        },
+        Parameter::required(
+            "value",
+            kind::BYTES,
+            "The string to calculate the HMAC for.",
+        ),
+        Parameter::required(
+            "key",
+            kind::BYTES,
+            "The string to use as the cryptographic key.",
+        ),
+        Parameter::optional("algorithm", kind::BYTES, "The hashing algorithm to use.")
+            .default(&DEFAULT_ALGORITHM)
+            .enum_variants(ALGORITHM_ENUM),
     ]
 });
 

@@ -26,14 +26,12 @@ impl Function for EncodeBase16 {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to encode.",
-            default: None,
-            enum_variants: None,
-        }]
+        const PARAMETERS: &[Parameter] = &[Parameter::required(
+            "value",
+            kind::BYTES,
+            "The string to encode.",
+        )];
+        PARAMETERS
     }
 
     fn compile(

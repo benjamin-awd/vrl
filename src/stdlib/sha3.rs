@@ -27,22 +27,18 @@ static VARIANT_ENUM: &[EnumVariant] = &[
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string to calculate the hash for.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "variant",
-            kind: kind::BYTES,
-            required: false,
-            description: "The variant of the algorithm to use.",
-            default: Some(&DEFAULT_VARIANT),
-            enum_variants: Some(VARIANT_ENUM),
-        },
+        Parameter::required(
+            "value",
+            kind::BYTES,
+            "The string to calculate the hash for.",
+        ),
+        Parameter::optional(
+            "variant",
+            kind::BYTES,
+            "The variant of the algorithm to use.",
+        )
+        .default(&DEFAULT_VARIANT)
+        .enum_variants(VARIANT_ENUM),
     ]
 });
 

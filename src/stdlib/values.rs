@@ -31,14 +31,12 @@ impl Function for Values {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[Parameter {
-            keyword: "value",
-            kind: kind::OBJECT,
-            required: true,
-            description: "The object to extract values from.",
-            default: None,
-            enum_variants: None,
-        }]
+        const PARAMETERS: &[Parameter] = &[Parameter::required(
+            "value",
+            kind::OBJECT,
+            "The object to extract values from.",
+        )];
+        PARAMETERS
     }
 
     fn examples(&self) -> &'static [Example] {

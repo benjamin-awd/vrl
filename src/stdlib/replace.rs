@@ -5,38 +5,23 @@ static DEFAULT_COUNT: LazyLock<Value> = LazyLock::new(|| Value::Integer(-1));
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "The original string.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "pattern",
-            kind: kind::BYTES | kind::REGEX,
-            required: true,
-            description: "Replace all matches of this pattern. Can be a static string or a regular expression.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "with",
-            kind: kind::BYTES,
-            required: true,
-            description: "The string that the matches are replaced with.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "count",
-            kind: kind::INTEGER,
-            required: false,
-            description: "The maximum number of replacements to perform. `-1` means replace all matches.",
-            default: Some(&DEFAULT_COUNT),
-            enum_variants: None,
-        },
+        Parameter::required("value", kind::BYTES, "The original string."),
+        Parameter::required(
+            "pattern",
+            kind::BYTES | kind::REGEX,
+            "Replace all matches of this pattern. Can be a static string or a regular expression.",
+        ),
+        Parameter::required(
+            "with",
+            kind::BYTES,
+            "The string that the matches are replaced with.",
+        ),
+        Parameter::optional(
+            "count",
+            kind::INTEGER,
+            "The maximum number of replacements to perform. `-1` means replace all matches.",
+        )
+        .default(&DEFAULT_COUNT),
     ]
 });
 

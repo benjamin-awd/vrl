@@ -56,14 +56,12 @@ impl Function for Seahash {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[Parameter {
-            keyword: "value",
-            kind: kind::ANY,
-            required: true,
-            description: "The string to calculate the hash for.",
-            default: None,
-            enum_variants: None,
-        }]
+        const PARAMETERS: &[Parameter] = &[Parameter::required(
+            "value",
+            kind::ANY,
+            "The string to calculate the hash for.",
+        )];
+        PARAMETERS
     }
 }
 

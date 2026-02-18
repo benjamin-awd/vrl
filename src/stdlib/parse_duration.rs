@@ -48,22 +48,9 @@ static UNIT_ENUM: &[EnumVariant] = &[
 ];
 
 static PARAMETERS: &[Parameter] = &[
-    Parameter {
-        keyword: "value",
-        kind: kind::BYTES,
-        required: true,
-        description: "The string of the duration.",
-        default: None,
-        enum_variants: None,
-    },
-    Parameter {
-        keyword: "unit",
-        kind: kind::BYTES,
-        required: true,
-        description: "The output units for the duration.",
-        default: None,
-        enum_variants: Some(UNIT_ENUM),
-    },
+    Parameter::required("value", kind::BYTES, "The string of the duration."),
+    Parameter::required("unit", kind::BYTES, "The output units for the duration.")
+        .enum_variants(UNIT_ENUM),
 ];
 
 fn parse_duration(bytes: &Value, unit: &Value) -> Resolved {

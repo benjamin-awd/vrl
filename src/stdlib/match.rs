@@ -34,24 +34,15 @@ impl Function for Match {
     }
 
     fn parameters(&self) -> &'static [Parameter] {
-        &[
-            Parameter {
-                keyword: "value",
-                kind: kind::BYTES,
-                required: true,
-                description: "The value to match.",
-                default: None,
-                enum_variants: None,
-            },
-            Parameter {
-                keyword: "pattern",
-                kind: kind::REGEX,
-                required: true,
-                description: "The regular expression pattern to match against.",
-                default: None,
-                enum_variants: None,
-            },
-        ]
+        const PARAMETERS: &[Parameter] = &[
+            Parameter::required("value", kind::BYTES, "The value to match."),
+            Parameter::required(
+                "pattern",
+                kind::REGEX,
+                "The regular expression pattern to match against.",
+            ),
+        ];
+        PARAMETERS
     }
 
     fn examples(&self) -> &'static [Example] {

@@ -14,22 +14,13 @@ static DEFAULT_STRICT_MODE: LazyLock<Value> = LazyLock::new(|| Value::Boolean(tr
 
 static PARAMETERS: LazyLock<Vec<Parameter>> = LazyLock::new(|| {
     vec![
-        Parameter {
-            keyword: "value",
-            kind: kind::BYTES,
-            required: true,
-            description: "Access log of the Application Load Balancer.",
-            default: None,
-            enum_variants: None,
-        },
-        Parameter {
-            keyword: "strict_mode",
-            kind: kind::BOOLEAN,
-            required: false,
-            description: "When set to `false`, the parser ignores any newly added or trailing fields in AWS ALB logs instead of failing. Defaults to `true` to preserve strict parsing behavior.",
-            default: Some(&DEFAULT_STRICT_MODE),
-            enum_variants: None,
-        },
+        Parameter::required(
+            "value",
+            kind::BYTES,
+            "Access log of the Application Load Balancer.",
+        ),
+        Parameter::optional("strict_mode", kind::BOOLEAN, "When set to `false`, the parser ignores any newly added or trailing fields in AWS ALB logs instead of failing. Defaults to `true` to preserve strict parsing behavior.")
+            .default(&DEFAULT_STRICT_MODE),
     ]
 });
 
